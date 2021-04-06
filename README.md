@@ -19,6 +19,13 @@
    PERF_PATH = "/path/to/perf"
    FLAME_PATH = "/path/to/FlameGraph"   
    ```
+### Install OFED Driver (Mellanox NIC Only) 
+1. Downloaad the OFED drier from the Mellanox website: https://www.mellanox.com/products/infiniband-drivers/linux/mlnx_ofed.
+2. Untar and install:
+   ```
+   cd /path/to/driver/directory
+   sudo ./mlnxofedinstall
+   ```
 ## 2. Getting the mapping between CPU and receive queues of NIC
 The default RSS or RPS will forward packets to a receive queue of NIC or CPU based on the hash value of five tuples, leading performance fluctuation
 for different runs. Hence, in order to make the performance reproducible, we use `ntuple` instead to steer packets to a specific queue/CPU. The setup script is covered by `network_setup.py`. The only thing you need to do is to get the mappiing between CPUs and receive queues. 
