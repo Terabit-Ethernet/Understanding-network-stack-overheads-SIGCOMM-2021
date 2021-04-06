@@ -25,6 +25,16 @@ for different runs. Hence, in order to make the performance reproducible, we use
 
 The following instruction is for Mellanox NIC, which may be okay to extend for other NIC as well. We will use IRQ affinity to infer the mapping. The assumption here is there is a one-to-one mapping among receive queue and IRQ as well.
 
+1. Set IRQ mapping between CPU and IRQ:
+ ```
+  sudo set_irq_affinity.sh  <iface>
+ ```
+2. Show the IRQ affinity:
+ ```
+  sudo show_irq_affinity.sh enp37s0f1
+ ```
+4. 
+
 ## Authors
 * Shubham Chaudhary 
 * Qizhe Cai
