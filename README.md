@@ -83,19 +83,21 @@ NUMA_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8".split()]
 To run the experiment (eg. single flow case), 
 1. At the receiver side, 
 ```
-cd receiver
-./single-flow.sh <iface>
+sudo -s
+sh receiver/single-flow.sh <iface>
 ```
 `<iface>` is the interface name of the receiver's NIC.
 
 2. At the sender side,
 ```
-cd sender
-./single-flow.sh <public_ip> <ip of iface> <iface>
+sudo -s
+sh sender/single-flow.sh <public_ip> <ip of iface> <iface>
 ```
-`<public_ip>` is for synchronizing between sender and receiver for running the experiments; currently, we are using XMLServer to control the synchronization. `ip of iface` is the interface's IP, you'd like to evaluate the performance. Both IP addresses are receiver addresses. `<iface>` is the NIC name in the sender side.
+`<public_ip>` is for synchronizing between sender and receiver for running the experiments; currently, we are using XMLServer to control the synchronization. `ip of iface` is the dst interface's IP, you'd like to evaluate the performance. Both IP addresses are **receiver** addresses. `<iface>` is the NIC name in the sender side.
 
-3. The results can be found in `results/`; if you would like to get CPU profiling results organized by categories, you can utilize the `symbol_mapping.tsv` to categorize. 
+3. The results can be found in `results/`; if you would like to get CPU profiling results organized by categories, you can look at log file. For example, in no optimization single flow case, `results/single-flow_no-opts.log`contained this info:  `data_copy       etc     lock    mm      netdev  sched   skb     tcp/ip
+4.590   9.650   4.980   7.030   16.090  4.880   7.060   37.210`.
+
 ## Authors
 * Shubham Chaudhary 
 * Qizhe Cai
