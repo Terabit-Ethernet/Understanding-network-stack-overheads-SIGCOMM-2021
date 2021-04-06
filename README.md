@@ -84,7 +84,7 @@ cd receiver
 cd sender
 ./single-flow.sh <public_ip> <ip of iface>
 ```
-`<public_ip>` is for synchronizing between sender and receiver for running the experiments. `ip of iface` is the interface's IP, you'd like to evaluate the performance.
+`<public_ip>` is for synchronizing between sender and receiver for running the experiments; currently, we are using XMLServer to control the synchronization. `ip of iface` is the interface's IP, you'd like to evaluate the performance.
 
 3. The results can be found ; if you would like to get CPU profiling results organized by categories, you can utilize the `symbol_mapping.tsv` to categorize. 
 ## Authors
