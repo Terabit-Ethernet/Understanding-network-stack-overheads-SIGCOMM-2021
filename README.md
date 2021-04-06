@@ -21,7 +21,9 @@
    ```
 ## 2. Getting the mapping between CPU and receive queues of NIC
 The default RSS or RPS will forward packets to a receive queue of NIC or CPU based on the hash value of five tuples, leading performance fluctuation
-for different runs. Hence, in order to make the performance reproducible, we use `ntuple` instead to steer packets to a specific queue/CPU. The setup script is covered by th
+for different runs. Hence, in order to make the performance reproducible, we use `ntuple` instead to steer packets to a specific queue/CPU. The setup script is covered by `network_setup.py`. The only thing you need to do is to get the mappiing between CPUs and receive queues. 
+
+The following instruction is for Mellanox NIC, which may be okay to extend for other NIC as well. We will use IRQ affinity to infer the mapping. The assumption here is there is a one-to-one mapping among receive queue and IRQ as well.
 
 ## Authors
 * Shubham Chaudhary 
