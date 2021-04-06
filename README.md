@@ -86,7 +86,7 @@ cd sender
 ```
 `<public_ip>` is for synchronizing between sender and receiver for running the experiments; currently, we are using XMLServer to control the synchronization. `ip of iface` is the interface's IP, you'd like to evaluate the performance.
 
-3. The results can be found ; if you would like to get CPU profiling results organized by categories, you can utilize the `symbol_mapping.tsv` to categorize. 
+3. The results can be found in `results/`; if you would like to get CPU profiling results organized by categories, you can utilize the `symbol_mapping.tsv` to categorize. 
 ## Authors
 * Shubham Chaudhary 
 * Qizhe Cai
