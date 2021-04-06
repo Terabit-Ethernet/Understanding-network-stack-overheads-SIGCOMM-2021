@@ -68,13 +68,13 @@ The following instruction is for Mellanox NIC, which may be okay to extend for o
 175: 400000
 176: 800000
  ```
-IRQ 152 can be ignored. To interpret the line `153: 000001`, 153 is the IRQ number and it maps to the receive queue 0, while `000001` refers to core 0 and this number is in hex format. `000002` refers to core 1 and `000010` refers to core 4.
+IRQ 152 can be ignored. To interpret the line `153: 000001`, 153 is the IRQ number and it maps to the receive queue 0, while `000001` refers to core 0 and this number is in hex format. For example, `000002` refers to core 1 and `000010` refers to core 4.
 
 3. Change CPU_TO_RX_QUEUE_MAP in the `network_setup.py`. For the example stated above, the mapping is:
 ```
 CPU_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8 1 9 10 11 2 12 13 14 3 15 16 17 4 18 19 20 5 21 22 23".split()]
 ```
-4. Change NUMA_TO_RX_QUEUE_MAP in the `network_setup.py`; it would be the first CPU node in the server; for example, if the server has 4 NUMA nodes and Core 0 is in NUMA node 0, Core 1 is in NUMA node 1, Core 2 is in NUMA noded 2, Core 3 is in NUMA node 3, then
+4. Change NUMA_TO_RX_QUEUE_MAP in the `network_setup.py`; it would be the first CPU node in each NUMA node; for example, if the server has 4 NUMA nodes and Core 0 is in NUMA node 0, Core 1 is in NUMA node 1, Core 2 is in NUMA noded 2, Core 3 is in NUMA node 3, then
 ```
 NUMA_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8".split()]
 ```
