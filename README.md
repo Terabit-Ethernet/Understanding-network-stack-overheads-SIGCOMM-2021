@@ -67,6 +67,10 @@ IRQ 152 can be ignored. To interpret the line `153: 000001`, 153 is the IRQ numb
 ```
 CPU_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8 1 9 10 11 2 12 13 14 3 15 16 17 4 18 19 20 5 21 22 23".split()]
 ```
+4. Change NUMA_TO_RX_QUEUE_MAP in the `network_setup.py`; it would be the first CPU node in the server; for example, if the server has 4 NUMA nodes and Core 0 is in NUMA node 0, Core 1 is in NUMA node 1, Core 2 is in NUMA noded 2, Core 3 is in NUMA node 3, then
+```
+NUMA_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8".split()]
+```
 ## Authors
 * Shubham Chaudhary 
 * Qizhe Cai
