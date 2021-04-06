@@ -84,8 +84,9 @@ To run the experiment (eg. single flow case),
 1. At the receiver side, 
 ```
 cd receiver
-./single-flow.sh
+./single-flow.sh <iface>
 ```
+`<iface>` is the interface name of the receiver's NIC.
 2. At the sender side,
 ```
 cd sender
