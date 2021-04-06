@@ -71,6 +71,23 @@ CPU_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8 1 9 10 11 2 12 13 14 3 15 16 17 
 ```
 NUMA_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8".split()]
 ```
+
+## 3. Running the experiment
+To run the experiment (eg. single flow case), 
+1. At the receiver side, 
+```
+cd receiver
+./single-flow.sh
+```
+2. At the sender side,
+```
+cd sender
+./single-flow.sh <public_ip> <ip of iface>
+```
+`<public_ip>` is for synchronizing between sender and receiver for running the experiments. `ip of iface` is the interface's IP, you'd like to evaluate the performance.
+
+3. The results can be found ; if you would like to get CPU profiling results organized by categories, you can utilize the `symbol_mapping.tsv` to categorize. 
 ## Authors
 * Shubham Chaudhary 
 * Qizhe Cai
+
