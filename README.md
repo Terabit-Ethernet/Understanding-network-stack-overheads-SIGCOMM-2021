@@ -2,14 +2,20 @@
 
 
 
-## Install tools
+## 1. Install tools
 ### Perf and Flamegraph
-1. Download Linux kernel source tree:
+1. Install the perf by apt-get if you are using the default kernel version. If you build the kernel by source, then:
    ```
    sudo -s
-   cd ~
-   wget https://mirrors.edge.kernel.org/pub/linux/kernel/v5.x/linux-5.4.43.tar.gz
-   tar xzvf linux-5.4.43.tar.gz
-   s```
+   cd /path/to/kernel/source/tools/perf
+   make
+   ```
+2. Git clone the Flamegraph tool. This tool is useful for understanding/visualizing the data path of the kernel:
+   '''
+   git clone https://github.com/brendangregg/FlameGraph.git
+   '''
+3. Revise the data path of perf and flamegraph in  
 
-
+## Authors
+* Shubham Chaudhary 
+* Qizhe Cai
