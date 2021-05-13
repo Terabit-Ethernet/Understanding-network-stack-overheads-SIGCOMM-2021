@@ -94,7 +94,7 @@ sh receiver/single-flow.sh <iface>
 sudo -s
 sh sender/single-flow.sh <public_ip> <ip of iface> <iface>
 ```
-`<public_ip>` is for synchronizing between sender and receiver for running the experiments; currently, we are using XMLServer to control the synchronization. `ip of iface` is the dst interface's IP, which you'd like to evaluate the performance. Both IP addresses (`<public ip>` and `ip of iface`) are **receiver** addresses. `<iface>` is the NIC name in the sender side.
+`<public_ip>` is for synchronizing between sender and receiver for running the experiments; currently, we are using XMLServer to control the synchronization. `<ip of iface>` is the dst interface's IP, which you'd like to evaluate the performance. Both IP addresses (`<public ip>` and `<ip of iface>`) are **receiver** addresses. `<iface>` is the NIC name in the sender side.
 
 3. The results can be found in `results/`; if you would like to get CPU profiling results organized by categories, you can look at log file. For example, in no optimization single flow case, `results/single-flow_no-opts.log`contained this info:  `data_copy       etc     lock    mm      netdev  sched   skb     tcp/ip
 4.590   9.650   4.980   7.030   16.090  4.880   7.060   37.210`.
