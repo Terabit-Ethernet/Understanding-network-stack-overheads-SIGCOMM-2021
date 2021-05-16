@@ -43,7 +43,7 @@ def parse_args():
     # Configuration for setting the IRQ affinity
     parser.add_argument('--sender', action='store_true', default=None, help='This is the sender.')
     parser.add_argument('--receiver', action='store_true', default=None, help='This is the receiver.')
-    parser.add_argument("--config", choices=["one-to-one", "incast", "outcast", "all-to-all"], default="one-to-one", help="Configuration to run the experiment with.")
+    parser.add_argument("--config", choices=["one-to-one", "incast", "outcast", "all-to-all", "single"], default="single", help="Configuration to run the experiment with.")
 
     # Parse basic parameters
     parser.add_argument('interface', type=str, help='The network device interface to configure.')
@@ -161,7 +161,7 @@ def setup_irq_mode_no_arfs_sender(iface, config):
     manage_ntuple(iface, True)
     ntuple_clear_rules(iface)
     set_irq_affinity(iface)
-    if config in ["one-to-one", "incast"]:
+    if config in ["one-to-one", "incast", "single"]:
         cpus = [(cpu, IPERF_BASE_PORT + n) for n, cpu in enumerate(CPUS)]
     if config == "outcast":
         cpus = [(CPUS[0], IPERF_BASE_PORT + n) for n in range(MAX_CONNECTIONS)]
@@ -182,7 +182,7 @@ def setup_irq_mode_no_arfs_receiver(iface, config):
     manage_ntuple(iface, True)
     ntuple_clear_rules(iface)
     set_irq_affinity(iface) 
-    if config in ["one-to-one", "outcast"]:
+    if config in ["one-to-one", "outcast", "single"]:
         cpus = [(cpu, IPERF_BASE_PORT + n) for n, cpu in enumerate(CPUS)]
     if config == "incast":
         cpus = [(CPUS[0], IPERF_BASE_PORT + n) for n in range(MAX_CONNECTIONS)]
