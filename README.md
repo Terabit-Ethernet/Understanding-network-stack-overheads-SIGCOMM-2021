@@ -99,6 +99,36 @@ sh sender/single-flow.sh <public_ip> <ip of iface> <iface>
 3. The results can be found in `results/`; if you would like to get CPU profiling results organized by categories, you can look at log file. For example, in no optimization single flow case, `results/single-flow_no-opts.log`contained this info:  `data_copy       etc     lock    mm      netdev  sched   skb     tcp/ip
 4.590   9.650   4.980   7.030   16.090  4.880   7.060   37.210`.
 
+## 4. Artifact Evaluation
+- Figure 3(a)-3(d) (single flow):
+   - Sender: ``` sh ./sender/single-flow.sh 128.84.155.115 192.168.10.115 enp37s0f1 ```
+   - Receiver: ``` sh ./receiver/single-flow.sh enp37s0f1 ```
+- Figure 3(e)(single flow):
+   - To Do: add script   
+- Figuree 3(f)(single flow):
+   - To Do: add script    
+- Figure 4 (one-to-one):
+   - Sender: ``` sh ./sender/one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1 ```
+   - Receiver: ``` sh ./receiver/one-to-one.sh enp37s0f1 ```
+   - Figure 4c: NIC-remote Flow:
+      - To Do: add script
+- Figure 5 (incast):
+   - Sender: ``` sh ./sender/incast.sh 128.84.155.115 192.168.10.115 enp37s0f1 ```
+   - Receiver: ``` sh ./receiver/incast.sh enp37s0f1 ```
+- Figure 6 (all-to-all):
+   - Sender: ``` sh ./sender/all-to-all.sh 128.84.155.115 192.168.10.115 enp37s0f1 ```
+   - Receiver: ``` sh ./receiver/all-to-all.sh enp37s0f1 `
+   - Figure 6c: skb size distribution
+      - To Do: add script
+- Figure 7 (pkt drop):
+   - To Do: add script  
+- Figure 8 (short flow incast):
+   - To Do: add script  
+- Figure 9 (mixed flow):
+  - To Do: add script  
+- outcast:
+   - Sender: ``` sh ./sender/one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1 ```
+   - Receiver: ``` sh ./receiver/one-to-one.sh enp37s0f1 ```
 ## Authors
 * Shubham Chaudhary 
 * Qizhe Cai
