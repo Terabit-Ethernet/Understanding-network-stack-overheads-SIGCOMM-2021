@@ -108,7 +108,23 @@ sh sender/single-flow.sh <public_ip> <ip of iface> <iface>
 - Figuree 3(f)(single flow):
    - To Do: add script    
 - Figure 4 (one-to-one):
-   - Sender: sh ./sender/single-flow.sh 128.84.155.115 192.168.10.115 enp37s0f1
+   - Sender: ``` sh ./sender/one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1 ```
+   - Receiver: ``` sh ./receiver/one-to-one.sh enp37s0f1 ```
+- Figure 5 (incast):
+   - Sender: ``` sh ./sender/incast.sh 128.84.155.115 192.168.10.115 enp37s0f1 ```
+   - Receiver: ``` sh ./receiver/incast.sh enp37s0f1 ```
+- Figure 6 (all-to-all):
+   - Sender: ``` sh ./sender/all-to-all.sh 128.84.155.115 192.168.10.115 enp37s0f1 ```
+   - Receiver: ``` sh ./receiver/all-to-all.sh enp37s0f1 ```
+- Figure 7 (pkt drop):
+   - To Do: add script  
+- Figure 8 (short flow incast):
+   - To Do: add script  
+- Figure 9 (mixed flow):
+  - To Do: add script  
+- outcast:
+   - Sender: ``` sh ./sender/one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1 ```
+   - Receiver: ``` sh ./receiver/one-to-one.sh enp37s0f1 ```
 ## Authors
 * Shubham Chaudhary 
 * Qizhe Cai
