@@ -99,6 +99,16 @@ sh sender/single-flow.sh <public_ip> <ip of iface> <iface>
 3. The results can be found in `results/`; if you would like to get CPU profiling results organized by categories, you can look at log file. For example, in no optimization single flow case, `results/single-flow_no-opts.log`contained this info:  `data_copy       etc     lock    mm      netdev  sched   skb     tcp/ip
 4.590   9.650   4.980   7.030   16.090  4.880   7.060   37.210`.
 
+## 4. Artifact Evaluation
+- Figure 3(a)-3(d) (single flow):
+   - Sender: ``` sh ./sender/single-flow.sh 128.84.155.115 192.168.10.115 enp37s0f1 ```
+   - Receiver: ``` sh ./receiver/single-flow.sh enp37s0f1 ```
+- Figure 3(e)(single flow):
+   - To Do: add script   
+- Figuree 3(f)(single flow):
+   - To Do: add script    
+- Figure 4 (one-to-one):
+   - Sender: sh ./sender/single-flow.sh 128.84.155.115 192.168.10.115 enp37s0f1
 ## Authors
 * Shubham Chaudhary 
 * Qizhe Cai
