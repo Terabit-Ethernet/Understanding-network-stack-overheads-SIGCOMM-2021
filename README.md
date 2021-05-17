@@ -130,7 +130,15 @@ sh sender/single-flow.sh <public_ip> <ip of iface> <iface>
          make
          insmod gro_measure.ko
        ```
-      - 
+      - Enable the gro counting
+       ```
+        echo 1 > /sys/module/gro_measure/parameters/gro_gen
+       ```
+      - GRO counting results are in the kernel.log:
+       ```
+        sudo tail -f /var/log/kern.log
+       ```
+      - Run the experiment as usual (recommended: run experiment one by one) and record the results
 - Figure 7 (pkt drop):
    - To Do: add script  
 - Figure 8 (short flow incast):
