@@ -170,6 +170,9 @@ def setup_irq_mode_no_arfs_sender(iface, config):
         for i, sender_cpu in enumerate(CPUS):
             for j, receiver_cpu in enumerate(CPUS):
                 cpus.append((sender_cpu, IPERF_BASE_PORT + MAX_CONNECTIONS * i + j))
+    # try RSS for one-to-one and all-to-all case
+    if config in ["one-to-one", "all-to-all"]:
+        return
     for n, (cpu, port) in enumerate(cpus):
         ntuple_send_port_to_queue(iface, port, CPU_TO_RX_QUEUE_MAP[cpu + 1], n)
     for n in range(MAX_RPCS):
@@ -191,6 +194,9 @@ def setup_irq_mode_no_arfs_receiver(iface, config):
         for i, sender_cpu in enumerate(CPUS):
             for j, receiver_cpu in enumerate(CPUS):
                 cpus.append((receiver_cpu, IPERF_BASE_PORT + MAX_CONNECTIONS * i + j))
+    # try RSS for one-to-one and all-to-all case
+    if config in ["one-to-one", "all-to-all"]:
+        return
     for n, (cpu, port) in enumerate(cpus):
         ntuple_send_port_to_queue(iface, port, CPU_TO_RX_QUEUE_MAP[cpu + 1], n)
     for n in range(MAX_RPCS):
