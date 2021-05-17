@@ -119,7 +119,14 @@ sh sender/single-flow.sh <public_ip> <ip of iface> <iface>
    - Sender: ``` sh ./sender/all-to-all.sh 128.84.155.115 192.168.10.115 enp37s0f1 ```
    - Receiver: ``` sh ./receiver/all-to-all.sh enp37s0f1 ```
    - Figure 6c: skb size distribution
-      - To Do: add script
+      - Change the source and destination IP address  
+      - Install gro_measure kernel module
+       ```
+         sudo -s 
+         cd gro_measure
+         insmod gro_measure.ko
+       ```
+      - 
 - Figure 7 (pkt drop):
    - To Do: add script  
 - Figure 8 (short flow incast):
