@@ -29,7 +29,8 @@ NETPERF_BASE_PORT = 40000
 PERF_PATH = "/home/shubham/bin/perf"
 FLAME_PATH = "/home/shubham/utils/FlameGraph"
 PERF_DATA = "perf.data"
-CPUS = [0, 4, 8, 12, 2, 6, 10, 14]
+#CPUS = [0, 4, 8, 12, 2, 6, 10, 14]
+CPUS = [ i for i in range(24)]
 MAX_CONNECTIONS = len(CPUS)
 MAX_RPCS = 16
 
@@ -40,7 +41,7 @@ def parse_args():
     # Add arguments
     parser.add_argument("--receiver", required=True, type=str, help="Address of the receiver to communicate metadata.")
     parser.add_argument("--addr", required=True, type=str, help="Address of the receiver to run experiments on.")
-    parser.add_argument("--config", choices=["one-to-one", "incast", "outcast", "all-to-all"], default="one-to-one", help="Configuration to run the experiment with.")
+    parser.add_argument("--config", choices=["one-to-one", "incast", "outcast", "all-to-all", "single"], default="single", help="Configuration to run the experiment with.")
     parser.add_argument("--num-connections", type=int, default=1, help="Number of connections.")
     parser.add_argument("--num-rpcs", type=int, default=0, help="Number of RPC style connections.")
     parser.add_argument('--arfs', action='store_true', default=False, help='This experiment is run with aRFS.')
@@ -92,7 +93,10 @@ def parse_args():
     if args.arfs:
         args.affinity = []
     else:
-        args.affinity = [cpu + 1 for cpu in args.cpus]
+        if args.config in ["one-to-one", "all-to-all"]:
+            args.affinity = CPUS
+        else:
+            args.affinity = [cpu + 1 for cpu in args.cpus]
 
     # Create a list of experiments
     args.experiments = []
@@ -131,7 +135,7 @@ def run_iperf(cpu, addr, port, duration, window):
 
 
 def run_iperfs(config, addr, num_connections, cpus, duration, window):
-    if config in ["one-to-one", "incast"]:
+    if config in ["one-to-one", "incast", "single"]:
         iperfs = [run_iperf(cpu, addr, IPERF_BASE_PORT + n, duration, window) for n, cpu in enumerate(cpus)]
     elif config == "outcast":
         iperfs = [run_iperf(cpus[0], addr, IPERF_BASE_PORT + n, duration, window) for n in range(num_connections)]
@@ -258,7 +262,7 @@ if __name__ == "__main__":
         netperfs = run_netperfs(args.cpus[0], args.addr, args.num_rpcs, args.duration)
 
         # Start the sar instance
-        sar = run_sar(args.cpus + args.affinity)
+        sar = run_sar(list(set(args.cpus + args.affinity)))
 
         # Wait till all iperfs finish
         for p in iperfs + netperfs:
@@ -310,7 +314,7 @@ if __name__ == "__main__":
         netperfs = run_netperfs(args.cpus[0], args.addr, args.num_rpcs, args.duration)
 
         # Start the perf instance
-        perf = run_perf_cache(args.cpus + args.affinity)
+        perf = run_perf_cache(list(set(args.cpus + args.affinity)))
 
         # Wait till all iperfs finish
         for p in iperfs + netperfs:
@@ -364,7 +368,7 @@ if __name__ == "__main__":
         # Start the perf instance
         output_dir = tempfile.TemporaryDirectory()
         perf_data_file = os.path.join(output_dir.name, PERF_DATA)
-        perf = run_perf_record_util(args.cpus + args.affinity, perf_data_file)
+        perf = run_perf_record_util(list(set(args.cpus + args.affinity)), perf_data_file)
 
         # Wait till all iperfs finish
         for p in iperfs + netperfs:
@@ -427,7 +431,7 @@ if __name__ == "__main__":
         # Start the perf instance
         output_dir = tempfile.TemporaryDirectory()
         perf_data_file = os.path.join(output_dir.name, PERF_DATA)
-        perf = run_perf_record_cache(args.cpus + args.affinity, perf_data_file)
+        perf = run_perf_record_cache(list(set(args.cpus + args.affinity)), perf_data_file)
 
         # Wait till all iperfs finish
         for p in iperfs + netperfs:
@@ -489,7 +493,7 @@ if __name__ == "__main__":
         # Start the perf instance
         output_dir = tempfile.TemporaryDirectory()
         perf_data_file = os.path.join(output_dir.name, PERF_DATA)
-        perf = run_perf_record_flame(args.cpus + args.affinity, perf_data_file)
+        perf = run_perf_record_flame(list(set(args.cpus + args.affinity)), perf_data_file)
 
         # Wait till all iperfs finish
         for p in iperfs + netperfs:
