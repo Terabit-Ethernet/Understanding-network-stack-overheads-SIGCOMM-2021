@@ -93,10 +93,10 @@ def parse_args():
     if args.arfs:
         args.affinity = []
     else:
-        if args.config in ["one-to-one", "all-to-all"]:
+        if args.config in ["all-to-all"]:
             args.affinity = CPUS
         else:
-            args.affinity = [cpu + 1 for cpu in args.cpus]
+            args.affinity = [(cpu + 1) % len(CPUS) for cpu in args.cpus]
 
     # Create a list of experiments
     args.experiments = []
