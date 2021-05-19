@@ -135,8 +135,10 @@ Enter the sudo mode first and then enter the directory:
    - follow 3(e) instruction to run the test (one by one), with two additional steps:
    ```
    sudo -s
+   // start measuring the latency
    echo 1 > /sys/module/tcp/parameters/qizhe_dist_on
    run one exp at a time (follow 3e)
+   // stop measuring the latency
    echo 0 > /sys/module/tcp/parameters/qizhe_dist_on
    ```
    
