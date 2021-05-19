@@ -128,7 +128,18 @@ Enter the sudo mode first and then enter the directory:
    sudo update-grub2
    sudo reboot
    ```
-   - After rebooting, follow 3(e) instruction to run the test (one by one), with two additional steps:
+   - After rebooting, open one terminal for checking the results in the kernel log,
+   ```
+     sudo tail -f /var/log/kern.log
+   ```
+   - follow 3(e) instruction to run the test (one by one), with two additional steps:
+   ```
+   sudo -s
+   echo 1 > /sys/module/tcp/parameters/qizhe_dist_on
+   run one exp at a time (follow 3e)
+   echo 0 > /sys/module/tcp/parameters/qizhe_dist_on
+   ```
+   
 - Figure 4 (one-to-one):
    - Sender: ``` sh ./sender/one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1 ```
    - Receiver: ``` sh ./receiver/one-to-one.sh enp37s0f1 ```
