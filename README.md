@@ -123,6 +123,12 @@ Enter the sudo mode first and then enter the directory:
    ```
     GRUB_DEFAULT="1>Ubuntu, with Linux 5.4.43-qizhe.latency"
    ```
+   Save and exit the file, and then update grub menu and reboot
+   ```
+   sudo update-grub2
+   sudo reboot
+   ```
+   - After rebooting, follow 3(e) instruction to run the test (one by one), with two additional steps:
 - Figure 4 (one-to-one):
    - Sender: ``` sh ./sender/one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1 ```
    - Receiver: ``` sh ./receiver/one-to-one.sh enp37s0f1 ```
