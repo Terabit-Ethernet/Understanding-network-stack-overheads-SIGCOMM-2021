@@ -9,6 +9,8 @@ SYMBOL_MAP_FILE = os.path.join(os.path.split(os.path.realpath(__file__))[0], "sy
 def process_iperf_output(lines):
     throughput = 0.
     num_samples = 0
+    # get last 10 sec avg throughput (exclude the last second)
+    lines = lines[-12:-2]
     for line in lines:
         elements = line.split()
         if len(elements) > 2 and elements[-1] == "Gbits/sec":

@@ -33,6 +33,7 @@ NETPERF_BASE_PORT = 40000
 
 # Maximum number of connections
 CPUS = [0, 2, 4, 6, 8, 12, 14, 16, 18, 20, 22]
+CPUS = [ i for i in range(24)]
 MAX_CONNECTIONS = len(CPUS)
 MAX_RPCS = 16
 
@@ -161,6 +162,7 @@ def setup_irq_mode_no_arfs_sender(iface, config):
     manage_ntuple(iface, True)
     ntuple_clear_rules(iface)
     set_irq_affinity(iface)
+    loc = 0
     if config in ["one-to-one", "incast", "single"]:
         cpus = [(cpu, IPERF_BASE_PORT + n) for n, cpu in enumerate(CPUS)]
     if config == "outcast":
@@ -170,14 +172,15 @@ def setup_irq_mode_no_arfs_sender(iface, config):
         for i, sender_cpu in enumerate(CPUS):
             for j, receiver_cpu in enumerate(CPUS):
                 cpus.append((sender_cpu, IPERF_BASE_PORT + MAX_CONNECTIONS * i + j))
-    # try RSS for one-to-one and all-to-all case
-    if config in ["one-to-one", "all-to-all"]:
+    # # try RSS for all-to-all case
+    if config in ["all-to-all"]:
         return
     for n, (cpu, port) in enumerate(cpus):
-        ntuple_send_port_to_queue(iface, port, CPU_TO_RX_QUEUE_MAP[cpu + 1], n)
+        ntuple_send_port_to_queue(iface, port, CPU_TO_RX_QUEUE_MAP[(cpu + 1) % (len(CPU_TO_RX_QUEUE_MAP))], loc)
+        loc += 1
     for n in range(MAX_RPCS):
-        ntuple_send_port_to_queue(iface, NETPERF_BASE_PORT + n, CPU_TO_RX_QUEUE_MAP[CPUS[0] + 1], 2 * MAX_CONNECTIONS * MAX_CONNECTIONS + n)
-
+        ntuple_send_port_to_queue(iface, NETPERF_BASE_PORT + n, CPU_TO_RX_QUEUE_MAP[CPUS[0] + 1], loc)
+        loc += 1
 
 def setup_irq_mode_no_arfs_receiver(iface, config):
     stop_irq_balance()
@@ -185,6 +188,7 @@ def setup_irq_mode_no_arfs_receiver(iface, config):
     manage_ntuple(iface, True)
     ntuple_clear_rules(iface)
     set_irq_affinity(iface) 
+    loc = 0
     if config in ["one-to-one", "outcast", "single"]:
         cpus = [(cpu, IPERF_BASE_PORT + n) for n, cpu in enumerate(CPUS)]
     if config == "incast":
@@ -194,13 +198,15 @@ def setup_irq_mode_no_arfs_receiver(iface, config):
         for i, sender_cpu in enumerate(CPUS):
             for j, receiver_cpu in enumerate(CPUS):
                 cpus.append((receiver_cpu, IPERF_BASE_PORT + MAX_CONNECTIONS * i + j))
-    # try RSS for one-to-one and all-to-all case
-    if config in ["one-to-one", "all-to-all"]:
+    # try RSS for all-to-all case
+    if config in ["all-to-all"]:
         return
     for n, (cpu, port) in enumerate(cpus):
-        ntuple_send_port_to_queue(iface, port, CPU_TO_RX_QUEUE_MAP[cpu + 1], n)
+        ntuple_send_port_to_queue(iface, port, CPU_TO_RX_QUEUE_MAP[(cpu + 1) % (len(CPU_TO_RX_QUEUE_MAP))], loc)
+        loc += 1
     for n in range(MAX_RPCS):
-        ntuple_send_port_to_queue(iface, NETPERF_BASE_PORT + n, CPU_TO_RX_QUEUE_MAP[CPUS[0] + 1], 2 * MAX_CONNECTIONS * MAX_CONNECTIONS + n)
+        ntuple_send_port_to_queue(iface, NETPERF_BASE_PORT + n, CPU_TO_RX_QUEUE_MAP[CPUS[0] + 1], loc)
+        loc += 1
 
 
 def setup_affinity_mode(iface, arfs, sender, receiver, config):
