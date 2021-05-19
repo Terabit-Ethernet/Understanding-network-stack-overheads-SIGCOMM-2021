@@ -100,13 +100,29 @@ sh sender/single-flow.sh <public_ip> <ip of iface> <iface>
 4.590   9.650   4.980   7.030   16.090  4.880   7.060   37.210`.
 
 ## 4. Artifact Evaluation
+Enter the sudo mode first and then enter the directory:
+```
+ sudo -s
+ cd terabit-network-stack-profiling
+```
 - Figure 3(a)-3(d) (single flow):
    - Sender: ``` sh ./sender/single-flow.sh 128.84.155.115 192.168.10.115 enp37s0f1 ```
    - Receiver: ``` sh ./receiver/single-flow.sh enp37s0f1 ```
 - Figure 3(e)(single flow):
    - To Do: add script   
 - Figuree 3(f)(single flow):
-   - To Do: add script    
+   - To measure the latency, you need to switch to a different kernel in the receiver side:
+   ```
+     sudo vim /etc/default/grub
+   ```
+   In the grub file, comment out the current GRUB_DEFAULT line:
+   ```
+    #GRUB_DEFAULT="1>Ubuntu, with Linux 5.4.43-qizhe" 
+   ```
+   And uncomment the line:
+   ```
+    GRUB_DEFAULT="1>Ubuntu, with Linux 5.4.43-qizhe.latency"
+   ```
 - Figure 4 (one-to-one):
    - Sender: ``` sh ./sender/one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1 ```
    - Receiver: ``` sh ./receiver/one-to-one.sh enp37s0f1 ```
