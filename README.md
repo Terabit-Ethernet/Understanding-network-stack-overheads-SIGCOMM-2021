@@ -175,6 +175,7 @@ Enter the sudo mode first and then enter the directory:
        ```
       - Run the experiment as usual (recommended: run experiment one by one) and record the results
 - Figure 7 (pkt drop):
+   - Follow the Figure 3f instruction to change the kernel to 5.4.43.qizhe.latency. 
    - To Do: add script  
 - Figure 8 (short flow incast):
    - To Do: add script  
