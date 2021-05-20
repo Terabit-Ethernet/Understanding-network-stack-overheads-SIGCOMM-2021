@@ -129,17 +129,23 @@ Enter the sudo mode first and then enter the directory:
    sudo reboot
    ```
    - After rebooting, follow 3(e) instruction to run the tests (but with one setup each time), with two additional steps:
-      - turn on qizhe_dist_on before running experiment 
+       - turn on qizhe_dist_on before running experiment 
          ```
          sudo -s
          // start measuring the latency
          echo 1 > /sys/module/tcp/parameters/qizhe_dist_on
          ```
-     - Open a new termnal to record the latency (eg. if the window size is 200KB):
+      - Open a new termnal to record the latency (eg. if the window size is 200KB):
         ```
          sudo tail -f /var/log/kern.log > results/200_latency
         ```
   - Follow 3(e) instruction to run experiment (with one window size at a time)
+  - After finish all experiments, turn off the qizhe_dist_on 
+      ```
+      sudo -s
+      // start measuring the latency
+      echo 0 > /sys/module/tcp/parameters/qizhe_dist_on
+      ```
 - Figure 4 (one-to-one):
    - Sender: ``` sh ./sender/one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1 ```
    - Receiver: ``` sh ./receiver/one-to-one.sh enp37s0f1 ```
