@@ -139,12 +139,16 @@ Enter the sudo mode first and then enter the directory:
         ```
          sudo tail -f /var/log/kern.log > results/200_latency
         ```
-    - Follow 3(e) instruction to run experiment (with one window size at a time)
+      - Follow 3(e) instruction to run experiment (with one window size at a time)
   - After finish all experiments, turn off the qizhe_dist_on 
       ```
       sudo -s
       // start measuring the latency
       echo 0 > /sys/module/tcp/parameters/qizhe_dist_on
+      ```
+  - Get Latency results
+      ```
+      python get_latency.py
       ```
 - Figure 4 (one-to-one):
    - Sender: ``` sh ./sender/one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1 ```
