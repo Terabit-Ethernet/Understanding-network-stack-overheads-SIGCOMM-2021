@@ -182,6 +182,11 @@ Enter the sudo mode first and then enter the directory:
         sudo tail -f /var/log/kern.log
        ```
       - Run the experiment as usual (recommended: run experiment one by one) and record the results
+      - After finishing the GRO evaluation, turn the gro_gen off and remove the module
+       ```
+        echo 0 > /sys/module/gro_measure/parameters/gro_gen
+        sudo rmmod gro_measure
+       ```
 - Figure 7 (pkt drop):
    - Follow the Figure 3f instruction to change the kernel at the receiver siide to 5.4.43.qizhe.latency. 
    - Then enable the packet drop and set the packet drop rate(eg. rate = 0.0001)
