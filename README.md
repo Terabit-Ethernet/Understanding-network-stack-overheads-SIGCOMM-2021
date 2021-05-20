@@ -100,13 +100,56 @@ sh sender/single-flow.sh <public_ip> <ip of iface> <iface>
 4.590   9.650   4.980   7.030   16.090  4.880   7.060   37.210`.
 
 ## 4. Artifact Evaluation
+Enter the sudo mode first and then enter the directory:
+```
+ sudo -s
+ cd terabit-network-stack-profiling
+```
 - Figure 3(a)-3(d) (single flow):
    - Sender: ``` sh ./sender/single-flow.sh 128.84.155.115 192.168.10.115 enp37s0f1 ```
    - Receiver: ``` sh ./receiver/single-flow.sh enp37s0f1 ```
 - Figure 3(e)(single flow):
    - To Do: add script   
 - Figuree 3(f)(single flow):
-   - To Do: add script    
+   - To measure the latency, you need to switch to a different kernel in the receiver side:
+   ```
+     sudo vim /etc/default/grub
+   ```
+   In the grub file, comment out the current GRUB_DEFAULT line:
+   ```
+    #GRUB_DEFAULT="1>Ubuntu, with Linux 5.4.43-qizhe" 
+   ```
+   And uncomment the line:
+   ```
+    GRUB_DEFAULT="1>Ubuntu, with Linux 5.4.43-qizhe.latency"
+   ```
+   Save and exit the file, and then update grub menu and reboot
+   ```
+   sudo update-grub2
+   sudo reboot
+   ```
+   - After rebooting, follow 3(e) instruction to run the tests (but with one setup each time), with two additional steps:
+       - turn on qizhe_dist_on before running experiment 
+         ```
+         sudo -s
+         // start measuring the latency
+         echo 1 > /sys/module/tcp/parameters/qizhe_dist_on
+         ```
+      - Open a new termnal to record the latency (eg. if the window size is 200KB):
+        ```
+         sudo tail -f /var/log/kern.log > results/200_latency
+        ```
+      - Follow 3(e) instruction to run experiment (with one window size at a time)
+  - After finish all experiments, turn off the qizhe_dist_on 
+      ```
+      sudo -s
+      // start measuring the latency
+      echo 0 > /sys/module/tcp/parameters/qizhe_dist_on
+      ```
+  - Get Latency results
+      ```
+      python get_latency.py
+      ```
 - Figure 4 (one-to-one):
    - Sender: ``` sh ./sender/one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1 ```
    - Receiver: ``` sh ./receiver/one-to-one.sh enp37s0f1 ```
@@ -140,6 +183,7 @@ sh sender/single-flow.sh <public_ip> <ip of iface> <iface>
        ```
       - Run the experiment as usual (recommended: run experiment one by one) and record the results
 - Figure 7 (pkt drop):
+   - Follow the Figure 3f instruction to change the kernel to 5.4.43.qizhe.latency. 
    - To Do: add script  
 - Figure 8 (short flow incast):
    - To Do: add script  
