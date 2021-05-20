@@ -183,7 +183,13 @@ Enter the sudo mode first and then enter the directory:
        ```
       - Run the experiment as usual (recommended: run experiment one by one) and record the results
 - Figure 7 (pkt drop):
-   - Follow the Figure 3f instruction to change the kernel to 5.4.43.qizhe.latency. 
+   - Follow the Figure 3f instruction to change the kernel at the receiver siide to 5.4.43.qizhe.latency. 
+   - Then enable the packet drop and set the packet drop rate(eg. rate = 0.0001)
+     ```
+     sudo -s
+     sysctl -w net.core.packet_loss_gen=10000
+     ```
+     Here, 1/packet_loss_gen is packet drop rate.
    - To Do: add script  
 - Figure 8 (short flow incast):
    - To Do: add script  
