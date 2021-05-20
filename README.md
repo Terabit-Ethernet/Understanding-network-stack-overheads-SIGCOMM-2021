@@ -139,7 +139,7 @@ Enter the sudo mode first and then enter the directory:
         ```
          sudo tail -f /var/log/kern.log > results/200_latency
         ```
-  - Follow 3(e) instruction to run experiment (with one window size at a time)
+    - Follow 3(e) instruction to run experiment (with one window size at a time)
   - After finish all experiments, turn off the qizhe_dist_on 
       ```
       sudo -s
