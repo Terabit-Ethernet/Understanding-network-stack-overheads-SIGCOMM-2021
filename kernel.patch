@@ -1,0 +1,563 @@
+Only in linux-5.4.43.qizhe.latency/arch/x86/include: generated
+Only in linux-5.4.43.qizhe.latency/certs: signing_key.pem
+Only in linux-5.4.43.qizhe.latency/certs: signing_key.x509
+Only in linux-5.4.43.qizhe.latency/certs: x509.genkey
+Only in linux-5.4.43.qizhe.latency: .config.old
+diff -crB linux-5.4.43/drivers/net/ethernet/mellanox/mlx5/core/en_txrx.c linux-5.4.43.qizhe.latency/drivers/net/ethernet/mellanox/mlx5/core/en_txrx.c
+*** linux-5.4.43/drivers/net/ethernet/mellanox/mlx5/core/en_txrx.c	2020-05-27 11:46:53.000000000 -0400
+--- linux-5.4.43.qizhe.latency/drivers/net/ethernet/mellanox/mlx5/core/en_txrx.c	2021-05-20 21:00:12.170638267 -0400
+***************
+*** 106,111 ****
+--- 106,119 ----
+  	return busy_xsk;
+  }
+  
++ int qizhe_napi_dist[5001] = {0};
++ 
++ static int qizhe_napi_dist_on __read_mostly;
++ module_param(qizhe_napi_dist_on, int, 0644);
++ MODULE_PARM_DESC(qizhe_napi_dist_on, "sampling every x skbs");
++ EXPORT_SYMBOL(qizhe_napi_dist_on);
++ 
++ 
+  int mlx5e_napi_poll(struct napi_struct *napi, int budget)
+  {
+  	struct mlx5e_channel *c = container_of(napi, struct mlx5e_channel,
+***************
+*** 120,128 ****
+  	bool busy = false;
+  	int work_done = 0;
+  	int i;
+! 
+  	ch_stats->poll++;
+! 
+  	for (i = 0; i < c->num_tc; i++)
+  		busy |= mlx5e_poll_tx_cq(&c->sq[i].cq, budget);
+  
+--- 128,140 ----
+  	bool busy = false;
+  	int work_done = 0;
+  	int i;
+! 	ktime_t time1, time2;
+! 	int delta = 0;
+  	ch_stats->poll++;
+! 	/* count the initialize the timestamp */
+! 	if (qizhe_napi_dist_on ==1) {
+! 		time1 = ktime_get();
+! 	}
+  	for (i = 0; i < c->num_tc; i++)
+  		busy |= mlx5e_poll_tx_cq(&c->sq[i].cq, budget);
+  
+***************
+*** 143,149 ****
+  
+  	mlx5e_poll_ico_cq(&c->icosq.cq);
+  
+! 	busy |= rq->post_wqes(rq);
+  	if (xsk_open) {
+  		if (mlx5e_poll_ico_cq(&c->xskicosq.cq))
+  			/* Don't clear the flag if nothing was polled to prevent
+--- 155,178 ----
+  
+  	mlx5e_poll_ico_cq(&c->icosq.cq);
+  
+!         busy |= rq->post_wqes(rq);
+! 	
+! 	if(qizhe_napi_dist_on == 0 && qizhe_napi_dist[0] != 0) {
+! 		for (i = 1; i < 1001; i++)
+! 			printk("napi hist[%d] = %d", i, qizhe_napi_dist[i]);
+! 		for (i = 0; i < 1001; i++)
+! 			qizhe_napi_dist[i] = 0;
+! 	}
+! 	else if (qizhe_napi_dist_on == 1) {
+! 		time2 = ktime_get();
+! 		/* Measure the time diff */
+! 		delta = (int)(time2 -time1) / 1000;
+! 		if (qizhe_napi_dist[0] == 0)
+!                 	qizhe_napi_dist[0] = 1;
+!  		if (delta > 0 && delta < 1001)
+!                         qizhe_napi_dist[delta]++;
+! 	} 
+! 
+  	if (xsk_open) {
+  		if (mlx5e_poll_ico_cq(&c->xskicosq.cq))
+  			/* Don't clear the flag if nothing was polled to prevent
+Only in linux-5.4.43.qizhe.latency/include: config
+Only in linux-5.4.43.qizhe.latency/include: generated
+diff -crB linux-5.4.43/include/linux/skbuff.h linux-5.4.43.qizhe.latency/include/linux/skbuff.h
+*** linux-5.4.43/include/linux/skbuff.h	2020-05-27 11:46:53.000000000 -0400
+--- linux-5.4.43.qizhe.latency/include/linux/skbuff.h	2021-05-20 21:00:55.827119952 -0400
+***************
+*** 520,525 ****
+--- 520,528 ----
+  	unsigned int	gso_type;
+  	u32		tskey;
+  
++ 	/* Qizhe: add debugging timestamp */
++         ktime_t         latency_timestamp;
++ 	u64		data_stamp;
+  	/*
+  	 * Warning : all fields before dataref are cleared in __alloc_skb()
+  	 */
+diff -crB linux-5.4.43/include/net/sock.h linux-5.4.43.qizhe.latency/include/net/sock.h
+*** linux-5.4.43/include/net/sock.h	2020-05-27 11:46:53.000000000 -0400
+--- linux-5.4.43.qizhe.latency/include/net/sock.h	2021-05-20 21:00:55.945129364 -0400
+***************
+*** 2563,2568 ****
+--- 2563,2570 ----
+  extern __u32 sysctl_wmem_default;
+  extern __u32 sysctl_rmem_default;
+  
++ extern __u32 sysctl_packet_loss_gen;
++ extern DEFINE_PER_CPU(unsigned int, packet_loss_counter);
+  DECLARE_STATIC_KEY_FALSE(net_high_order_alloc_disable_key);
+  
+  static inline int sk_get_wmem0(const struct sock *sk, const struct proto *proto)
+Only in linux-5.4.43.qizhe.latency: Module.symvers
+diff -crB linux-5.4.43/net/core/dev.c linux-5.4.43.qizhe.latency/net/core/dev.c
+*** linux-5.4.43/net/core/dev.c	2020-05-27 11:46:53.000000000 -0400
+--- linux-5.4.43.qizhe.latency/net/core/dev.c	2021-05-20 21:00:59.072378776 -0400
+***************
+*** 5505,5518 ****
+  	}
+  	rcu_read_unlock();
+  
+! 	if (&ptype->list == head)
+  		goto normal;
+  
+  	if (IS_ERR(pp) && PTR_ERR(pp) == -EINPROGRESS) {
+  		ret = GRO_CONSUMED;
+  		goto ok;
+  	}
+! 
+  	same_flow = NAPI_GRO_CB(skb)->same_flow;
+  	ret = NAPI_GRO_CB(skb)->free ? GRO_MERGED_FREE : GRO_MERGED;
+  
+--- 5505,5528 ----
+  	}
+  	rcu_read_unlock();
+  
+! 	if (&ptype->list == head) {
+  		goto normal;
++ 	}
+  
+  	if (IS_ERR(pp) && PTR_ERR(pp) == -EINPROGRESS) {
+  		ret = GRO_CONSUMED;
+  		goto ok;
+  	}
+! 	/* emulate packet drop */
+! 	if(sysctl_packet_loss_gen > 0) {
+! 		unsigned int *counter = this_cpu_ptr(&packet_loss_counter);
+! 		//kfree_skb(skb);
+! 		if(*counter >= sysctl_packet_loss_gen) {
+! 			ret = GRO_DROP;
+! 			*counter = 0;
+! 			goto ok;
+! 		}
+! 	}
+  	same_flow = NAPI_GRO_CB(skb)->same_flow;
+  	ret = NAPI_GRO_CB(skb)->free ? GRO_MERGED_FREE : GRO_MERGED;
+  
+diff -crB linux-5.4.43/net/core/sysctl_net_core.c linux-5.4.43.qizhe.latency/net/core/sysctl_net_core.c
+*** linux-5.4.43/net/core/sysctl_net_core.c	2020-05-27 11:46:53.000000000 -0400
+--- linux-5.4.43.qizhe.latency/net/core/sysctl_net_core.c	2021-05-20 21:00:59.046376702 -0400
+***************
+*** 315,320 ****
+--- 315,327 ----
+  
+  static struct ctl_table net_core_table[] = {
+  #ifdef CONFIG_NET
++         {       
++                 .procname       = "packet_loss_gen",
++                 .data           = &sysctl_packet_loss_gen,
++                 .maxlen         = sizeof(int),
++                 .mode           = 0644,
++                 .proc_handler   = proc_dointvec_minmax,
++         },
+  	{
+  		.procname	= "wmem_max",
+  		.data		= &sysctl_wmem_max,
+diff -crB linux-5.4.43/net/ipv4/af_inet.c linux-5.4.43.qizhe.latency/net/ipv4/af_inet.c
+*** linux-5.4.43/net/ipv4/af_inet.c	2020-05-27 11:46:53.000000000 -0400
+--- linux-5.4.43.qizhe.latency/net/ipv4/af_inet.c	2021-05-20 21:00:59.237391937 -0400
+***************
+*** 1404,1409 ****
+--- 1404,1418 ----
+  							   struct sk_buff *));
+  INDIRECT_CALLABLE_DECLARE(struct sk_buff *udp4_gro_receive(struct list_head *,
+  							   struct sk_buff *));
++ 
++ DEFINE_PER_CPU(unsigned int, packet_loss_counter);
++ __u32 sysctl_packet_loss_gen __read_mostly = 0;
++ 
++ 
++ // jaehyun
++ u64 received_data_size = 0;
++ EXPORT_SYMBOL(received_data_size);
++ 
+  struct sk_buff *inet_gro_receive(struct list_head *head, struct sk_buff *skb)
+  {
+  	const struct net_offload *ops;
+***************
+*** 1426,1432 ****
+--- 1435,1460 ----
+  	}
+  
+  	proto = iph->protocol;
++ 	/* test packet drop behavior before GRO */
++ 	if(sysctl_packet_loss_gen > 0) {
++ 	        if(iph->saddr == in_aton("192.168.10.114") &&
++                 	iph->daddr == in_aton("192.168.10.115") &&
++                 	proto == IPPROTO_TCP) {
++ 			unsigned int *counter = this_cpu_ptr(&packet_loss_counter);
++ 			(*counter) += 1;
++ 			if ((*counter) >= sysctl_packet_loss_gen) {
++ 		        	return pp;
++                 	}
+  
++         	}
++ 	}
++         /* Qizhe: latency_timestamp measurement */
++         if(iph->saddr == in_aton("192.168.10.114") &&
++                 iph->daddr == in_aton("192.168.10.115") && proto == IPPROTO_TCP) {
++ 		received_data_size += skb->len;
++                 skb_shinfo(skb)->latency_timestamp = ktime_get_real();
++                 skb_shinfo(skb)->data_stamp = received_data_size;
++         }
+  	rcu_read_lock();
+  	ops = rcu_dereference(inet_offloads[proto]);
+  	if (!ops || !ops->callbacks.gro_receive)
+Only in linux-5.4.43.qizhe.latency/net/ipv4: af_inet.c.old
+diff -crB linux-5.4.43/net/ipv4/tcp.c linux-5.4.43.qizhe.latency/net/ipv4/tcp.c
+*** linux-5.4.43/net/ipv4/tcp.c	2020-05-27 11:46:53.000000000 -0400
+--- linux-5.4.43.qizhe.latency/net/ipv4/tcp.c	2021-05-20 21:00:59.237391937 -0400
+***************
+*** 267,273 ****
+  #include <linux/slab.h>
+  #include <linux/errqueue.h>
+  #include <linux/static_key.h>
+! 
+  #include <net/icmp.h>
+  #include <net/inet_common.h>
+  #include <net/tcp.h>
+--- 267,273 ----
+  #include <linux/slab.h>
+  #include <linux/errqueue.h>
+  #include <linux/static_key.h>
+! #include <linux/inet.h>
+  #include <net/icmp.h>
+  #include <net/inet_common.h>
+  #include <net/tcp.h>
+***************
+*** 1556,1561 ****
+--- 1556,1565 ----
+  		       !inet_csk_in_pingpong_mode(sk))) &&
+  		      !atomic_read(&sk->sk_rmem_alloc)))
+  			time_to_ack = true;
++ 
++ 		// jaehyun
++ 		//printk("cleanup_rbuf: nxt-wup %u-%u=%u > rcv_mss %u ? -> %s (skb len: %u)",
++ 		//	tp->rcv_nxt, tp->rcv_wup, tp->rcv_nxt - tp->rcv_wup, icsk->icsk_ack.rcv_mss, time_to_ack ? "true":"false", skb->len);
+  	}
+  
+  	/* We send an ACK if we can now advertise a non-zero window
+***************
+*** 1951,1956 ****
+--- 1955,1976 ----
+   *	Probably, code can be easily improved even more.
+   */
+  
++ /* Qizhe measuring the latency */
++ int qizhe_count_for_measure = 0; 
++ //extern u64 received_data_size;
++ 
++ int qizhe_dist[5001] = {0};
++ 
++ static int qizhe_dist_on __read_mostly;
++ module_param(qizhe_dist_on, int, 0644);
++ MODULE_PARM_DESC(qizhe_dist_on, "sampling every x skbs");
++ EXPORT_SYMBOL(qizhe_dist_on);
++ 
++ static int qizhe_sampling_count __read_mostly = 1000;
++ module_param(qizhe_sampling_count, int, 0644);
++ MODULE_PARM_DESC(qizhe_sampling_count, "sampling every x skbs");
++ EXPORT_SYMBOL(qizhe_sampling_count);
++ 
+  int tcp_recvmsg(struct sock *sk, struct msghdr *msg, size_t len, int nonblock,
+  		int flags, int *addr_len)
+  {
+***************
+*** 2119,2124 ****
+--- 2139,2183 ----
+  		if (len < used)
+  			used = len;
+  
++ 		/* Qizhe: measure the latency */
++ 		if (inet_sk(sk)->inet_daddr == in_aton("192.168.10.114") 
++ 			&& inet_sk(sk)->inet_saddr == in_aton("192.168.10.115") && skb_shinfo(skb)->latency_timestamp != 0){
++ /*			if (qizhe_dist_on == 0 && qizhe_dist[0] != 0) {
++ 				int i;
++ 				for (i = 1; i < 5001; i++)
++ 					printk("hist[%d] = %d", i, qizhe_dist[i]);
++ 
++ 				for (i = 0; i < 5001; i++)
++ 					qizhe_dist[i] = 0;
++ 			}
++ 			else if (qizhe_dist_on == 1) {
++ 				int index;
++ 				ktime_t delta = net_timedelta(skb_shinfo(skb)->latency_timestamp);
++ 				index = (int)(delta / 1000);
++ 				if (qizhe_dist[0] == 0)
++ 					qizhe_dist[0] = 1;
++ 
++ 				if (index > 0 && index < 5001)
++ 					qizhe_dist[index]++;
++ 
++ 				skb_shinfo(skb)->latency_timestamp = 0;
++ 			}
++ */
++ 			if(qizhe_dist_on == 1)
++ 				qizhe_count_for_measure += 1;
++ 			else
++ 				qizhe_count_for_measure = 0;
++ 			if (qizhe_count_for_measure >= qizhe_sampling_count) {
++ 			        ktime_t delta = net_timedelta(skb_shinfo(skb)->latency_timestamp);
++ 				//u64 delta_data = received_data_size - skb_shinfo(skb)->data_stamp;
++ 	                       	//printk("delta: lat - %lld data - %llu (count %d skbs)\n", delta, delta_data, qizhe_sampling_count);
++ 				printk("delta: %lld\n", delta);
++                         	skb_shinfo(skb)->latency_timestamp = 0;
++ 				skb_shinfo(skb)->data_stamp = 0;
++ 				qizhe_count_for_measure = 0;
++ 			}
++ 
++ 		}
+  		/* Do we have urgent data here? */
+  		if (tp->urg_data) {
+  			u32 urg_offset = tp->urg_seq - *seq;
+***************
+*** 2138,2143 ****
+--- 2197,2204 ----
+  		}
+  
+  		if (!(flags & MSG_TRUNC)) {
++ 			//ktime_t copy_delta = ktime_get();
++ 
+  			err = skb_copy_datagram_msg(skb, offset, msg, used);
+  			if (err) {
+  				/* Exception. Bailout! */
+***************
+*** 2145,2150 ****
+--- 2206,2216 ----
+  					copied = -EFAULT;
+  				break;
+  			}
++ 
++ 			//if (qizhe_count_for_measure == 0) {
++ 			//	copy_delta = ktime_get() - copy_delta;
++ 			//	printk("copy latency: %llu (used %lu)\n", ktime_to_ns(copy_delta), used);
++ 			//}
+  		}
+  
+  		WRITE_ONCE(*seq, *seq + used);
+Only in linux-5.4.43.qizhe.latency/scripts: asn1_compiler
+Only in linux-5.4.43.qizhe.latency/scripts/basic: fixdep
+Only in linux-5.4.43.qizhe.latency/scripts: bin2c
+Only in linux-5.4.43.qizhe.latency/scripts: conmakehash
+Only in linux-5.4.43.qizhe.latency/scripts: extract-cert
+Only in linux-5.4.43.qizhe.latency/scripts: insert-sys-cert
+Only in linux-5.4.43.qizhe.latency/scripts: kallsyms
+Only in linux-5.4.43.qizhe.latency/scripts/kconfig: conf
+Only in linux-5.4.43.qizhe.latency/scripts/mod: devicetable-offsets.h
+Only in linux-5.4.43.qizhe.latency/scripts/mod: elfconfig.h
+Only in linux-5.4.43.qizhe.latency/scripts/mod: mk_elfconfig
+Only in linux-5.4.43.qizhe.latency/scripts/mod: modpost
+Only in linux-5.4.43.qizhe.latency/scripts: recordmcount
+Only in linux-5.4.43.qizhe.latency/scripts/selinux/genheaders: genheaders
+Only in linux-5.4.43.qizhe.latency/scripts/selinux/mdp: mdp
+Only in linux-5.4.43.qizhe.latency/scripts: sign-file
+Only in linux-5.4.43.qizhe.latency/scripts: sortextable
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-all.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-backtrace.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-backtrace.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-backtrace.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-bionic.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-bpf.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-bpf.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-bpf.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-compile-32.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-compile-x32.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-cplus-demangle.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-cplus-demangle.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-cplus-demangle.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-disassembler-four-args.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-dwarf.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-dwarf.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-dwarf_getlocations.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-dwarf_getlocations.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-dwarf_getlocations.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-dwarf.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-eventfd.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-eventfd.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-eventfd.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-fortify-source.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-fortify-source.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-fortify-source.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-get_cpuid.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-get_cpuid.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-get_cpuid.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-get_current_dir_name.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-get_current_dir_name.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-get_current_dir_name.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-gettid.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-gettid.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-glibc.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-glibc.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-glibc.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-gtk2.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-gtk2.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-gtk2-infobar.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-gtk2-infobar.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-gtk2-infobar.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-gtk2.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libaio.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libaio.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libaio.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libaudit.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libaudit.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libaudit.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libbabeltrace.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libbfd.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libbfd.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libbfd.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libcap.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libcap.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libcap.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libcrypto.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libcrypto.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libcrypto.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libdw-dwarf-unwind.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libdw-dwarf-unwind.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libdw-dwarf-unwind.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libelf.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libelf.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libelf-gelf_getnote.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libelf-gelf_getnote.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libelf-gelf_getnote.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libelf-getphdrnum.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libelf-getphdrnum.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libelf-getphdrnum.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libelf-getshdrstrndx.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libelf-getshdrstrndx.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libelf-getshdrstrndx.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libelf.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libelf-mmap.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libelf-mmap.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libelf-mmap.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libnuma.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libnuma.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libnuma.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libperl.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libperl.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libperl.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libpython.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libpython.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libpython.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libpython-version.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libpython-version.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libpython-version.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libslang.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libslang.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libslang-include-subdir.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libslang.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libunwind-aarch64.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libunwind.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libunwind.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libunwind.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libunwind-x86.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-libzstd.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-lzma.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-lzma.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-lzma.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-numa_num_possible_cpus.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-numa_num_possible_cpus.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-numa_num_possible_cpus.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-pthread-attr-setaffinity-np.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-pthread-attr-setaffinity-np.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-pthread-attr-setaffinity-np.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-pthread-barrier.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-pthread-barrier.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-pthread-barrier.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-reallocarray.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-reallocarray.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-sched_getcpu.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-sched_getcpu.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-sched_getcpu.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-sdt.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-sdt.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-sdt.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-setns.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-setns.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-setns.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-stackprotector-all.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-stackprotector-all.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-stackprotector-all.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-sync-compare-and-swap.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-sync-compare-and-swap.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-sync-compare-and-swap.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-timerfd.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-timerfd.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-timerfd.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-zlib.bin
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-zlib.d
+Only in linux-5.4.43.qizhe.latency/tools/build/feature: test-zlib.make.output
+Only in linux-5.4.43.qizhe.latency/tools/build: fixdep
+Only in linux-5.4.43.qizhe.latency/tools/lib/bpf: staticobjs
+Only in linux-5.4.43.qizhe.latency/tools/lib/traceevent/plugins: libtraceevent-dynamic-list
+Only in linux-5.4.43.qizhe.latency/tools/lib/traceevent/plugins: plugin_cfg80211.so
+Only in linux-5.4.43.qizhe.latency/tools/lib/traceevent/plugins: plugin_function.so
+Only in linux-5.4.43.qizhe.latency/tools/lib/traceevent/plugins: plugin_hrtimer.so
+Only in linux-5.4.43.qizhe.latency/tools/lib/traceevent/plugins: plugin_jbd2.so
+Only in linux-5.4.43.qizhe.latency/tools/lib/traceevent/plugins: plugin_kmem.so
+Only in linux-5.4.43.qizhe.latency/tools/lib/traceevent/plugins: plugin_kvm.so
+Only in linux-5.4.43.qizhe.latency/tools/lib/traceevent/plugins: plugin_mac80211.so
+Only in linux-5.4.43.qizhe.latency/tools/lib/traceevent/plugins: plugin_sched_switch.so
+Only in linux-5.4.43.qizhe.latency/tools/lib/traceevent/plugins: plugin_scsi.so
+Only in linux-5.4.43.qizhe.latency/tools/lib/traceevent/plugins: plugin_xen.so
+Only in linux-5.4.43.qizhe.latency/tools/objtool/arch/x86: lib
+Only in linux-5.4.43.qizhe.latency/tools/objtool: fixdep
+Only in linux-5.4.43.qizhe.latency/tools/objtool: objtool
+Only in linux-5.4.43.qizhe.latency/tools/perf/arch/x86/include: generated
+Only in linux-5.4.43.qizhe.latency/tools/perf: common-cmds.h
+Only in linux-5.4.43.qizhe.latency/tools/perf: .config-detected
+Only in linux-5.4.43.qizhe.latency/tools/perf: FEATURE-DUMP
+Only in linux-5.4.43.qizhe.latency/tools/perf: libperf-gtk.so
+Only in linux-5.4.43.qizhe.latency/tools/perf: perf
+Only in linux-5.4.43.qizhe.latency/tools/perf: perf-archive
+Only in linux-5.4.43.qizhe.latency/tools/perf: perf-read-vdso32
+Only in linux-5.4.43.qizhe.latency/tools/perf: perf-read-vdsox32
+Only in linux-5.4.43.qizhe.latency/tools/perf: PERF-VERSION-FILE
+Only in linux-5.4.43.qizhe.latency/tools/perf: perf-with-kcore
+Only in linux-5.4.43.qizhe.latency/tools/perf/pmu-events: jevents
+Only in linux-5.4.43.qizhe.latency/tools/perf/pmu-events: pmu-events.c
+Only in linux-5.4.43.qizhe.latency/tools/perf/python: perf.so
+Only in linux-5.4.43.qizhe.latency/tools/perf: python_ext_build
+Only in linux-5.4.43.qizhe.latency/tools/perf/tests: llvm-src-base.c
+Only in linux-5.4.43.qizhe.latency/tools/perf/tests: llvm-src-kbuild.c
+Only in linux-5.4.43.qizhe.latency/tools/perf/tests: llvm-src-prologue.c
+Only in linux-5.4.43.qizhe.latency/tools/perf/tests: llvm-src-relocation.c
+Only in linux-5.4.43.qizhe.latency/tools/perf/trace/beauty: generated
+Only in linux-5.4.43.qizhe.latency/tools/perf/util: expr-bison.c
+Only in linux-5.4.43.qizhe.latency/tools/perf/util: expr-bison.h
+Only in linux-5.4.43.qizhe.latency/tools/perf/util: expr-bison.output
+Only in linux-5.4.43.qizhe.latency/tools/perf/util/intel-pt-decoder: inat-tables.c
+Only in linux-5.4.43.qizhe.latency/tools/perf/util: parse-events-bison.c
+Only in linux-5.4.43.qizhe.latency/tools/perf/util: parse-events-bison.h
+Only in linux-5.4.43.qizhe.latency/tools/perf/util: parse-events-bison.output
+Only in linux-5.4.43.qizhe.latency/tools/perf/util: parse-events-flex.c
+Only in linux-5.4.43.qizhe.latency/tools/perf/util: parse-events-flex.h
+Only in linux-5.4.43.qizhe.latency/tools/perf/util: pmu-bison.c
+Only in linux-5.4.43.qizhe.latency/tools/perf/util: pmu-bison.h
+Only in linux-5.4.43.qizhe.latency/tools/perf/util: pmu-bison.output
+Only in linux-5.4.43.qizhe.latency/tools/perf/util: pmu-flex.c
+Only in linux-5.4.43.qizhe.latency/tools/perf/util: pmu-flex.h
+Only in linux-5.4.43.qizhe.latency: .version
