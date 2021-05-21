@@ -110,7 +110,7 @@ Enter the sudo mode first and then enter the directory:
    - Receiver: ``` sh ./receiver/single-flow.sh enp37s0f1 ```
 - Figure 3(e)(single flow):
    - To Do: add script   
-- Figuree 3(f)(single flow):
+- Figure 3(f)(single flow latency):
    - To measure the latency, you need to switch to a different kernel in the receiver side:
    ```
      sudo vim /etc/default/grub
@@ -127,6 +127,13 @@ Enter the sudo mode first and then enter the directory:
    ```
    sudo update-grub2
    sudo reboot
+   ```
+   If you want to build the kernel by source, download the kernel 5.4.43, apply the patch in the directory and then build from source:
+   ```
+   wget https://mirrors.edge.kernel.org/pub/linux/kernel/v5.x/linux-5.4.43.tar.gz
+   tar -xvf linux-5.4.43.tar.gz
+   cd linux-5.4.43.tar.gz
+   patch  -p1 < /path/to/terabit-network-stack/kernel.patch 
    ```
    - After rebooting, follow 3(e) instruction to run the tests (but with one setup each time), with two additional steps:
        - turn on qizhe_dist_on before running experiment 
