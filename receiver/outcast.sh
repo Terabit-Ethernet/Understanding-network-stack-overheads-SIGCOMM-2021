@@ -1,4 +1,7 @@
-iface=$1
+# Parse arguments
+# Example: ./outcast.sh enp37s0f1
+iface=${1:-enp37s0f1}
+
 # No Optimisations
 ./network_setup.py $iface --no-lro --no-gso --no-gro --no-tso --no-arfs --config outcast --receiver --mtu 1500 --sock-size
 for i in 2 4 8; do

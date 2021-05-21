@@ -1,5 +1,8 @@
-iface=$1
-# increase the number of open files
+# Parse arguments
+# Example: ./all-to-all.sh enp37s0f1
+iface=${1:-enp37s0f1}
+
+# Increase the number of open files
 ulimit -n 2048
 
 # No Optimisations

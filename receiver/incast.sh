@@ -1,4 +1,7 @@
-iface=$1
+# Parse arguments
+# Example: ./incast.sh enp37s0f1
+iface=${1:-enp37s0f1}
+
 # No Optimisations
 ./network_setup.py $iface --no-lro --no-gso --no-gro --no-tso --mtu 1500 --sock-size  --no-arfs --config incast --receiver
 for i in 8 16 24; do

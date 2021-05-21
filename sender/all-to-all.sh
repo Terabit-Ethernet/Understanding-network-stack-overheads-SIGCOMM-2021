@@ -1,9 +1,10 @@
-public_dst_ip=$1
-device_dst_ip=$2
-iface=$3
-# Example: ./incast.sh 128.84.155.115 192.168.10.115 enp1
+# Parse arguments 
+# Example: ./all-to-all.sh 128.84.155.115 192.168.10.115 enp37s0f1
+public_dst_ip=${1:-128.84.155.115}
+device_dst_ip=${2:-192.168.10.115}
+iface=${3:-enp37s0f1}
 
-# increase the number of open files
+# Increase the number of open files
 ulimit -n 2048
 
 # No Optimisations

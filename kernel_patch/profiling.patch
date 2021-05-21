@@ -1,0 +1,263 @@
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 955e137..0a0d018 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -520,6 +520,9 @@ struct skb_shared_info {
+ 	unsigned int	gso_type;
+ 	u32		tskey;
+ 
++	/* record GRO timestamp */
++	ktime_t		gro_tstamp;
++
+ 	/*
+ 	 * Warning : all fields before dataref are cleared in __alloc_skb()
+ 	 */
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 6c5a380..aec8746 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -2563,6 +2563,9 @@ extern int sysctl_optmem_max;
+ extern __u32 sysctl_wmem_default;
+ extern __u32 sysctl_rmem_default;
+ 
++extern __u32 sysctl_packet_loss_gen;
++extern unsigned int packet_loss_counter;
++
+ DECLARE_STATIC_KEY_FALSE(net_high_order_alloc_disable_key);
+ 
+ static inline int sk_get_wmem0(const struct sock *sk, const struct proto *proto)
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 120b994..5ab8dfc 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -5513,6 +5513,15 @@ static enum gro_result dev_gro_receive(struct napi_struct *napi, struct sk_buff
+ 		goto ok;
+ 	}
+ 
++	/* emulate packet drop */
++ 	if (sysctl_packet_loss_gen > 0) {
++ 		if (packet_loss_counter >= sysctl_packet_loss_gen) {
++ 			ret = GRO_DROP;
++ 			packet_loss_counter = 0;
++ 			goto ok;
++ 		}
++ 	}
++
+ 	same_flow = NAPI_GRO_CB(skb)->same_flow;
+ 	ret = NAPI_GRO_CB(skb)->free ? GRO_MERGED_FREE : GRO_MERGED;
+ 
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 0adf7a9..2d76516 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1924,7 +1924,7 @@ void sk_setup_caps(struct sock *sk, struct dst_entry *dst)
+ 	u32 max_segs = 1;
+ 
+ 	sk_dst_set(sk, dst);
+-	sk->sk_route_caps = dst->dev->features | sk->sk_route_forced_caps;
++	sk->sk_route_caps = dst->dev->features;
+ 	if (sk->sk_route_caps & NETIF_F_GSO)
+ 		sk->sk_route_caps |= NETIF_F_GSO_SOFTWARE;
+ 	sk->sk_route_caps &= ~sk->sk_route_nocaps;
+diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
+index 9f9e00b..994e2e0 100644
+--- a/net/core/sysctl_net_core.c
++++ b/net/core/sysctl_net_core.c
+@@ -315,6 +315,13 @@ proc_dolongvec_minmax_bpf_restricted(struct ctl_table *table, int write,
+ 
+ static struct ctl_table net_core_table[] = {
+ #ifdef CONFIG_NET
++	{       
++		.procname	= "packet_loss_gen",
++		.data		= &sysctl_packet_loss_gen,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++	},
+ 	{
+ 		.procname	= "wmem_max",
+ 		.data		= &sysctl_wmem_max,
+diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
+index 70f92aa..3ab6e05 100644
+--- a/net/ipv4/af_inet.c
++++ b/net/ipv4/af_inet.c
+@@ -1400,6 +1400,9 @@ static struct sk_buff *ipip_gso_segment(struct sk_buff *skb,
+ 	return inet_gso_segment(skb, features);
+ }
+ 
++unsigned int packet_loss_counter = 0;
++__u32 sysctl_packet_loss_gen __read_mostly = 0;
++
+ INDIRECT_CALLABLE_DECLARE(struct sk_buff *tcp4_gro_receive(struct list_head *,
+ 							   struct sk_buff *));
+ INDIRECT_CALLABLE_DECLARE(struct sk_buff *udp4_gro_receive(struct list_head *,
+@@ -1427,6 +1430,15 @@ struct sk_buff *inet_gro_receive(struct list_head *head, struct sk_buff *skb)
+ 
+ 	proto = iph->protocol;
+ 
++	/* if packet is dropped return before GRO */
++	if (sysctl_packet_loss_gen > 0) {
++		if (iph->saddr == in_aton("192.168.10.114") && iph->daddr == in_aton("192.168.10.115") && proto == IPPROTO_TCP) {
++			packet_loss_counter++;
++			if (packet_loss_counter >= sysctl_packet_loss_gen)
++				return pp;
++		}
++	}
++
+ 	rcu_read_lock();
+ 	ops = rcu_dereference(inet_offloads[proto]);
+ 	if (!ops || !ops->callbacks.gro_receive)
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index fe3cded..136ca86 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -249,6 +249,7 @@
+ #include <linux/types.h>
+ #include <linux/fcntl.h>
+ #include <linux/poll.h>
++#include <linux/inet.h>
+ #include <linux/inet_diag.h>
+ #include <linux/init.h>
+ #include <linux/fs.h>
+@@ -1943,6 +1944,16 @@ static int tcp_inq_hint(struct sock *sk)
+ 	return inq;
+ }
+ 
++static int measure_latency_on __read_mostly = 0;
++module_param(measure_latency_on, int, 0644);
++MODULE_PARM_DESC(measure_latency_on, "measure GRO to data copy latency");
++EXPORT_SYMBOL(measure_latency_on);
++
++static int latency_sampling_count __read_mostly = 1000;
++module_param(latency_sampling_count, int, 0644);
++MODULE_PARM_DESC(latency_sampling_count, "granularity of sampling data copy latency");
++EXPORT_SYMBOL(latency_sampling_count);
++
+ /*
+  *	This routine copies from a sock struct into the user buffer.
+  *
+@@ -1966,6 +1977,8 @@ int tcp_recvmsg(struct sock *sk, struct msghdr *msg, size_t len, int nonblock,
+ 	u32 urg_hole = 0;
+ 	struct scm_timestamping_internal tss;
+ 	int cmsg_flags;
++	struct iphdr *iph;
++	static int index = 1;	/* index for sampling data copy latency */
+ 
+ 	if (unlikely(flags & MSG_ERRQUEUE))
+ 		return inet_recv_error(sk, msg, len, addr_len);
+@@ -2138,6 +2151,18 @@ found_ok_skb:
+ 		}
+ 
+ 		if (!(flags & MSG_TRUNC)) {
++			/* print data copy latency */
++			if (measure_latency_on) {
++				iph = ip_hdr(skb);
++				if (iph->saddr == in_aton("192.168.10.114") && iph->daddr == in_aton("192.168.10.115")) {
++					if (index >= latency_sampling_count && skb_shinfo(skb)->gro_tstamp != 0) {
++						printk(KERN_INFO "[data-copy-latency] latency=%llu", ktime_to_ns(ktime_sub(ktime_get(), skb_shinfo(skb)->gro_tstamp)));
++						index = 0;
++					} 
++					index++;
++				}
++			}
++
+ 			err = skb_copy_datagram_msg(skb, offset, msg, used);
+ 			if (err) {
+ 				/* Exception. Bailout! */
+diff --git a/net/ipv4/tcp_offload.c b/net/ipv4/tcp_offload.c
+index e09147a..199e6c3 100644
+--- a/net/ipv4/tcp_offload.c
++++ b/net/ipv4/tcp_offload.c
+@@ -7,6 +7,7 @@
+  */
+ 
+ #include <linux/indirect_call_wrapper.h>
++#include <linux/inet.h>
+ #include <linux/skbuff.h>
+ #include <net/tcp.h>
+ #include <net/protocol.h>
+@@ -285,9 +286,25 @@ out:
+ 	return pp;
+ }
+ 
++static int skb_size_hist_on __read_mostly = 0;
++module_param(skb_size_hist_on, int, 0644);
++MODULE_PARM_DESC(skb_size_hist_on, "record skb sizes distribution");
++EXPORT_SYMBOL(skb_size_hist_on);
++
++static unsigned long skb_size_sampling_count __read_mostly = 2000000;
++module_param(skb_size_sampling_count, ulong, 0644);
++MODULE_PARM_DESC(skb_size_sampling_count, "granularity of sampling skb sizes");
++EXPORT_SYMBOL(skb_size_sampling_count);
++
++unsigned long tcp_histo[13] = {0}; 
++
+ int tcp_gro_complete(struct sk_buff *skb)
+ {
+ 	struct tcphdr *th = tcp_hdr(skb);
++	struct iphdr *iph = ip_hdr(skb);
++	static int index = 1;
++	unsigned long size;
++	int i;
+ 
+ 	skb->csum_start = (unsigned char *)th - skb->head;
+ 	skb->csum_offset = offsetof(struct tcphdr, check);
+@@ -298,6 +315,58 @@ int tcp_gro_complete(struct sk_buff *skb)
+ 	if (th->cwr)
+ 		skb_shinfo(skb)->gso_type |= SKB_GSO_TCP_ECN;
+ 
++	/* record GRO timestamp */
++	skb_shinfo(skb)->gro_tstamp = ktime_get();
++
++	/* record GRO accumulation skb sizes histogram */
++	if (skb_size_hist_on && iph->saddr == in_aton("192.168.10.114") && iph->daddr == in_aton("192.168.10.115")) {
++		if (index >= skb_size_sampling_count) {
++			printk(KERN_INFO "[skb-sizes] %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu",
++				tcp_histo[0], tcp_histo[1], tcp_histo[2], tcp_histo[3], tcp_histo[4], tcp_histo[5],
++				tcp_histo[6], tcp_histo[7], tcp_histo[8], tcp_histo[9], tcp_histo[10],
++				tcp_histo[11], tcp_histo[12]);
++			for (i = 0; i < 13; i++) {
++				tcp_histo[i] = 0;
++			}
++			index = 0;
++		}
++
++		if (skb->len > 300) {
++			if (skb->data_len)
++				size = skb->data_len;
++			else
++				size = skb->len;
++		}
++		if (size >= 60000)
++			tcp_histo[12]++;
++		else if (size >= 55000)
++			tcp_histo[11]++;
++		else if (size >= 50000)
++			tcp_histo[10]++;
++		else if (size >= 45000)
++			tcp_histo[9]++;
++		else if (size >= 40000)
++			tcp_histo[8]++;
++		else if (size >= 35000)
++			tcp_histo[7]++;
++		else if (size >= 30000)
++			tcp_histo[6]++;
++		else if (size >= 25000)
++			tcp_histo[5]++;
++		else if (size >= 20000)
++			tcp_histo[4]++;
++		else if (size >= 15000)
++			tcp_histo[3]++;
++		else if (size >= 10000)
++			tcp_histo[2]++;
++		else if (size >= 5000)
++			tcp_histo[1]++;
++		else if (size >= 500)
++			tcp_histo[0]++;
++
++		index++;	
++	}
++
+ 	return 0;
+ }
+ EXPORT_SYMBOL(tcp_gro_complete);

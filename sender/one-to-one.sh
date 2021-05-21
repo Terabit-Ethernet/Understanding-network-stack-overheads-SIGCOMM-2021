@@ -1,7 +1,9 @@
-public_dst_ip=$1
-device_dst_ip=$2
-iface=$3
-# Example: ./one-to-one.sh 128.84.155.115 192.168.10.115 enp1
+# Parse arguments 
+# Example: ./one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1
+public_dst_ip=${1:-128.84.155.115}
+device_dst_ip=${2:-192.168.10.115}
+iface=${3:-enp37s0f1}
+
 # No Optimisations
 ./network_setup.py $iface --no-lro --no-gso --no-gro --no-tso --no-arfs --sender --config one-to-one --mtu 1500 --sock-size
 for i in 8 16 24; do

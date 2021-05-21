@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import argparse
 import os
 import shlex
@@ -8,6 +9,7 @@ import tempfile
 import threading
 import time
 import xmlrpc.server
+from constants import *
 from process_output import *
 
 
@@ -22,50 +24,55 @@ class subprocess:
         return _sp.Popen(*args, **kwargs)
 
 
-# Constants
-SENDER_COMM_PORT = 8080
-IPERF_BASE_PORT = 30000
-NETPERF_BASE_PORT = 40000
-PERF_PATH = "/home/shubham/bin/perf"
-FLAME_PATH = "/home/shubham/utils/FlameGraph"
-PERF_DATA = "perf.data"
-#CPUS = [0, 4, 8, 12, 2, 6, 10, 14]
-CPUS = [ i for i in range(24)]
-MAX_CONNECTIONS = len(CPUS)
-MAX_RPCS = 16
-
-
 def parse_args():
     parser = argparse.ArgumentParser(description="Run TCP measurement experiments on the receiver.")
 
     # Add arguments
+    parser.add_argument("--flow-type", choices=["long", "short", "mixed"], default="long", help="Type of flow used for the experiment.")
     parser.add_argument("--config", choices=["one-to-one", "incast", "outcast", "all-to-all", "single"], default="single", help="Configuration to run the experiment with.")
+    parser.add_argument("--cpus", type=int, nargs="*", help="Which CPUs to use for experiment.")
+    parser.add_argument("--affinity", type=int, nargs="*", help="Which CPUs are being used for IRQ processing.")
     parser.add_argument("--num-connections", type=int, default=1, help="Number of connections.")
-    parser.add_argument("--num-rpcs", type=int, default=0, help="Number of RPC style connections.")
+    parser.add_argument("--num-rpcs", type=int, default=0, help="Number of short flows (for mixed flow type).")
     parser.add_argument('--arfs', action='store_true', default=False, help='This experiment is run with aRFS.')
-    parser.add_argument("--window", type=int, default=None, help="Specify the TCP window size in KiB.")
+    parser.add_argument("--window", type=int, default=None, help="Specify the TCP window size (KB).")
+    parser.add_argument("--packet-drop", type=int, default=0, help="Inverse packet drop rate.")
     parser.add_argument("--output", type=str, default=None, help="Write raw output to the directory.")
-    parser.add_argument("--throughput", action="store_true", help="Measure throughput in Gbps.")
-    parser.add_argument("--utilisation", action="store_true", help="Measure CPU utilisation in percent.")
-    parser.add_argument("--cache-miss", action="store_true", help="Measure LLC miss rate in percent.")
+    parser.add_argument("--throughput", action="store_true", help="Measure throughput.")
+    parser.add_argument("--utilisation", action="store_true", help="Measure CPU utilisation.")
+    parser.add_argument("--cache-miss", action="store_true", help="Measure LLC miss rate.")
     parser.add_argument("--util-breakdown", action="store_true", help="Calculate CPU utilisation breakdown.")
     parser.add_argument("--cache-breakdown", action="store_true", help="Calculate CPU utilisation breakdown.")
     parser.add_argument("--flame", action="store_true", help="Create a flamegraph from the experiment.")
     parser.add_argument("--latency", action="store_true", help="Calculate the average data copy latency for each packet.")
+    parser.add_argument("--skb-hist", action="store_true", help="Record the skb sizes histogram.")
 
     # Parse and verify arguments
     args = parser.parse_args()
+
+    # Report errors
+    if args.config == "single" and args.num_connections != 1:
+        print("Can't set --num-connections > 1 with --config single.")
+        exit(1)
+
+    if args.flow_type == "mixed" and args.config != single:
+        print("--flow-type mixed can only be combined with --config single.")
+        exit(1)
 
     if not (1 <= args.num_connections <= MAX_CONNECTIONS):
         print("Can't set --num-connections outside of [1, {}].".format(MAX_CONNECTIONS))
         exit(1)
 
-    if not (0 <= args.num_rpcs <= MAX_RPCS):
-        print("Can't set --num-rpcs outside of [0, {}].".format(MAX_RPCS))
+    if args.flow_type != "mixed" and args.num_rpcs > 0:
+        print("Can't set --num-rpcs > 0 without --flow-type mixed.")
         exit(1)
 
-    if args.num_rpcs > 0 and args.num_connections > 1:
-        print("Can't use more than 1 --num-connections if using --num-rpcs.")
+    if args.window is not None and args.flow_type != "long":
+        print("Can't set --window for --flow-type short/mixed.")
+        exit(1)
+
+    if not (0 <= args.num_rpcs <= MAX_RPCS):
+        print("Can't set --num-rpcs outside of [0, {}].".format(MAX_RPCS))
         exit(1)
 
     if args.flame and args.output is None:
@@ -73,47 +80,48 @@ def parse_args():
         exit(1)
 
     # Set CPUs to be used
-    if args.config != "incast":
-        args.cpus = CPUS[:args.num_connections]
+    if len(args.cpus) != 0:
+        if args.config in ["single", "incast"] and len(args.cpus) != 1:
+            print("Please provide only 1 --cpus for --config incast/single.")
+            exit(1)
+        elif len(args.cpus) != args.num_connections:
+            print("Please provide as many --cpus as --num-connections for --config outcast/one-to-one/all-to-all.")
+            exit(1)
+        elif not all(map(lambda c: 0 <= c < MAX_CPUS, args.cpus)):
+            print("Can't set --cpus outside of [0, {}].".format(MAX_CPUS))
+            exit(1)
     else:
-        args.cpus = CPUS[:1]
+        if args.config in ["incast", "single"]:
+            args.cpus = [0]
+        else:
+            args.cpus = list(range(args.num_connections))
+
+    if args.args and len(args.affinity) > 0:
+        print("Can't set --affinity with --arfs.")
+        exit(0)
 
     # Set IRQ processing CPUs
-    if args.arfs:
-        args.affinity = []
-    else:
-        if args.config in ["all-to-all"]:
-            args.affinity = CPUS
-        else:
-            args.affinity = [(cpu + 1) % len(CPUS) for cpu in args.cpus]
+    if len(args.affinity) != 0 and not all(map(lambda c: 0 <= c < MAX_CPUS, args.affinity)):
+        print("Can't set --cpus outside of [0, {}].".format(MAX_CPUS))
+        exit(1)
+    elif not args.arfs:
+        if args.config in ["incast", "single"]:
+            args.affinity = [1]
+        elif args.config in ["outcast", "one-to-one"]:
+            args.affinity = [cpu + 1 for cpu in args.cpus]
+        elif args.config == "all-to-all":
+            args.affinity = list(range(MAX_CPUS))
 
     # Create the directory for writing raw outputs
     if args.output is not None:
         os.makedirs(args.output, exist_ok=True)
-
-    # Create a list of experiments
-    args.experiments = []
-    if args.throughput:
-        args.experiments.append("throughput")
-    if args.utilisation:
-        args.experiments.append("utilisation")
-    if args.cache_miss:
-        args.experiments.append("cache miss")
-    if args.util_breakdown:
-        args.experiments.append("util breakdown")
-    if args.cache_breakdown:
-        args.experiments.append("cache breakdown")
-    if args.flame:
-        args.experiments.append("flame")
-    if args.latency:
-        args.experiments.append("latency")
 
     # Return parsed and verified arguments
     return args
 
 
 # Need to synchronize with the sender before starting experiment
-server = xmlrpc.server.SimpleXMLRPCServer(("0.0.0.0", SENDER_COMM_PORT), logRequests=False)
+server = xmlrpc.server.SimpleXMLRPCServer(("0.0.0.0", COMM_PORT), logRequests=False)
 server.register_introspection_functions()
 server_thread = threading.Thread(target=server.serve_forever, daemon=True)
 
@@ -176,29 +184,41 @@ def run_iperf(cpu, port, window):
         args = ["taskset", "-c", str(cpu), "iperf", "-i", "1", "-s", "-p", str(port)]
     else:
         args = ["taskset", "-c", str(cpu), "iperf", "-s", "-i", "1", "-p", str(port), "-w", str(window / 2) + "K"]
+
     return subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True)
 
 
-def run_iperfs(config, num_connections, cpus, window):
-    if config in ["one-to-one", "outcast", "single"]:
-        iperfs = [run_iperf(cpu, IPERF_BASE_PORT + n, window) for n, cpu in enumerate(cpus)]
+def run_netperf(cpu, port, window=None):
+    args = ["taskset", "-c", str(cpu), "netserver", "-p", str(port), "-D", "f", "-v", "2"]
+
+    return subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True)
+
+
+def run_flows(flow_type, config, num_connections, num_rpcs, cpus, window):
+    elif flow_type in ["long", "mixed"]:
+        flow_func = run_iperf
+    elif flow_type == "short":
+        flow_func = run_netperf
+    
+    procs = []
+    if config == "single":
+        procs.append(flow_func(cpu[0], BASE_PORT, window))
     elif config == "incast":
-        iperfs = [run_iperf(cpus[0], IPERF_BASE_PORT + n, window) for n in range(num_connections)]
+        procs += [flow_func(cpus[0], BASE_PORT + n, window) for n in range(num_connections)]
+    elif config in ["one-to-one", "outcast"]:
+        procs += [flow_func(cpu, BASE_PORT + n, window) for n, cpu in enumerate(cpus)]
     elif config == "all-to-all":
-        iperfs = []
         for i, sender_cpu in enumerate(cpus):
             for j, receiver_cpu in enumerate(cpus):
-                iperfs.append(run_iperf(receiver_cpu, IPERF_BASE_PORT + MAX_CONNECTIONS * i + j, window))
-    return iperfs
+                procs.append(flow_func(receiver_cpu, BASE_PORT + MAX_CONNECTIONS * i + j, window))
 
+    # If we're running mixed flow experiments run some additional
+    # short flows
+    if flow_type == "mixed":
+        for i in range(num_rpcs):
+            procs.append(run_netperf(cpus[0], ADDITIONAL_BASE_PORT + i))
 
-def run_netperf(cpu, port):
-    args = ["taskset", "-c", str(cpu), "netserver", "-p", str(port), "-D", "f", "-v", "2"]
-    return subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True)
-
-
-def run_netperfs(cpu, num_rpcs):
-    return [run_netperf(cpu, NETPERF_BASE_PORT + i) for i in range(num_rpcs)]
+    return procs
 
 
 def run_perf_cache(cpus):
@@ -245,12 +265,28 @@ def run_dmesg(level="info"):
     return subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True)
 
 
+def latency_measurement(enabled):
+    os.system("echo {} > /sys/module/tcp/parameters/measure_latency_on".format(int(enabled)))
+
+
+def skb_hist_measurement(enabled):
+    os.system("echo {} > /sys/module/tcp_offload/parameters/skb_size_hist_on".format(int(enabled)))
+    os.system("echo 100000 > /sys/module/tcp_offload/parameters/skb_size_sampling_count")
+
+
+def set_packet_drop_rate(rate):
+    os.system("sysctl -w net.core.packet_drop_gen={}".format(rate))
+
+
 if __name__ == "__main__":
     # Parse args
     args = parse_args()
 
     # Start the XMLRPC server thread
     server_thread.start()
+
+    # Set packet drop rate
+    set_packet_drop_rate(args.packet_drop)
 
     # Run the experiments
     clear_processes()
@@ -261,45 +297,32 @@ if __name__ == "__main__":
         is_sender_ready()
         print("[throughput] starting experiment...")
 
-        # Start iperf instances
-        iperfs = run_iperfs(args.config, args.num_connections, args.cpus, args.window)
-
-        # Start netperf instances
-        netperfs = run_netperfs(args.cpus[0], args.num_rpcs)
+        # Start iperf and/or netperf instances
+        procs = run_flows(args.flow_type, args.config, args.num_connections, args.num_rpcs, args.cpus, args.window)
 
         # Wait till sender is done sending
         mark_receiver_ready()
         is_sender_done()
 
-        # Kill all the iperfs
-        for p in iperfs + netperfs:
+        # Kill all the processes
+        for p in procs:
             p.kill()
-        for p in iperfs + netperfs:
-            p.wait()
         print("[throughput] finished experiment.")
 
         # Process and write the raw output
-        total_throughput = 0
-        for i, p in enumerate(iperfs):
+        for i, p in enumerate(procs):
             lines = p.stdout.readlines()
             if args.output is not None:
-                with open(os.path.join(args.output, "throughput_iperf_{}.log".format(i)), "w") as f:
+                with open(os.path.join(args.output, "throughput_benchmark_{}.log".format(i)), "w") as f:
                     f.writelines(lines)
-            total_throughput += process_iperf_output(lines)
-
-        # Print the output
-        print("[throughput] total throughput: {:.3f}".format(total_throughput))
 
     if args.utilisation:
         # Wait till sender starts
         is_sender_ready()
         print("[utilisation] starting experiment...")
         
-        # Start iperf instances
-        iperfs = run_iperfs(args.config, args.num_connections, args.cpus, args.window)
-
-        # Start netperf instances
-        netperfs = run_netperfs(args.cpus[0], args.num_rpcs)
+        # Start iperf and/or netperf instances
+        procs = run_flows(args.flow_type, args.config, args.num_connections, args.num_rpcs, args.cpus, args.window)
 
         # Start the sar instance
         sar = run_sar(list(set(args.cpus + args.affinity)))
@@ -308,32 +331,30 @@ if __name__ == "__main__":
         mark_receiver_ready()
         is_sender_done()
 
-        # Kill all the iperfs and sar
+        # Kill sar
         sar.send_signal(signal.SIGINT)
         sar.wait()
-        for p in iperfs + netperfs:
+
+        # Kill all the processes
+        for p in procs:
             p.kill()
-        for p in iperfs + netperfs:
-            p.wait()
         print("[utilisation] finished experiment.")
 
         # Process and write the raw output
-        throughput = 0
-        for i, p in enumerate(iperfs):
+        for i, p in enumerate(procs):
             lines = p.stdout.readlines()
             if args.output is not None:
-                with open(os.path.join(args.output, "utilisation_iperf_{}.log".format(i)), "w") as f:
+                with open(os.path.join(args.output, "utilisation_benchmark_{}.log".format(i)), "w") as f:
                     f.writelines(lines)
-            throughput += process_iperf_output(lines)
 
         lines = sar.stdout.readlines()
-        cpu_util = sum(process_sar_output(lines).values())
+        cpu_util = sum(process_util_output(lines).values())
         if args.output is not None:
             with open(os.path.join(args.output, "utilisation_sar.log"), "w") as f:
                 f.writelines(lines)
 
         # Print the output
-        print("[utilisation] total throughput: {:.3f}\tutilisation: {:.3f}".format(throughput, cpu_util))
+        print("[utilisation] utilisation: {:.3f}".format(cpu_util))
         header.append("receiver utilisation (%)")
         output.append("{:.3f}".format(cpu_util))
 
@@ -342,11 +363,8 @@ if __name__ == "__main__":
         is_sender_ready()
         print("[cache miss] starting experiment...")
         
-        # Start iperf instances
-        iperfs = run_iperfs(args.config, args.num_connections, args.cpus, args.window)
-
-        # Start netperf instances
-        netperfs = run_netperfs(args.cpus[0], args.num_rpcs)
+       # Start iperf and/or netperf instances
+        procs = run_flows(args.flow_type, args.config, args.num_connections, args.num_rpcs, args.cpus, args.window)
 
         # Start the perf instance
         perf = run_perf_cache(list(set(args.cpus + args.affinity)))
@@ -355,32 +373,30 @@ if __name__ == "__main__":
         mark_receiver_ready()
         is_sender_done()
 
-        # Kill all the iperfs and perf
+        # Kill perf
         perf.send_signal(signal.SIGINT)
         perf.wait()
-        for p in iperfs + netperfs:
+
+        # Kill all the processes
+        for p in procs:
             p.kill()
-        for p in iperfs + netperfs:
-            p.wait()
         print("[cache miss] finished experiment.")
 
         # Process and write the raw output
-        throughput = 0
-        for i, p in enumerate(iperfs):
+        for i, p in enumerate(procs):
             lines = p.stdout.readlines()
             if args.output is not None:
-                with open(os.path.join(args.output, "cache-miss_iperf_{}.log".format(i)), "w") as f:
+                with open(os.path.join(args.output, "cache-miss_benchmark_{}.log".format(i)), "w") as f:
                     f.writelines(lines)
-            throughput += process_iperf_output(lines)
 
         lines = perf.stdout.readlines()
-        cache_miss = process_perf_cache_output(lines)
+        cache_miss = process_cache_miss_output(lines)
         if args.output is not None:
             with open(os.path.join(args.output, "cache-miss_perf.log"), "w") as f:
                 f.writelines(lines)
 
         # Print the output
-        print("[cache miss] total throughput: {:.3f}\tcache miss: {:.3f}".format(throughput, cache_miss))
+        print("[cache miss] cache miss: {:.3f}".format(cache_miss))
         header.append("receiver cache miss (%)")
         output.append("{:.3f}".format(cache_miss))
 
@@ -389,51 +405,46 @@ if __name__ == "__main__":
         is_sender_ready()
         print("[util breakdown] starting experiment...")
 
-        # Start iperf instances
-        iperfs = run_iperfs(args.config, args.num_connections, args.cpus, args.window)
-
-        # Start netperf instances
-        netperfs = run_netperfs(args.cpus[0], args.num_rpcs)
+        # Start iperf and/or netperf instances
+        procs = run_flows(args.flow_type, args.config, args.num_connections, args.num_rpcs, args.cpus, args.window)
 
         # Start the perf instance
         output_dir = tempfile.TemporaryDirectory()
-        perf_data_file = os.path.join(output_dir.name, PERF_DATA)
+        perf_data_file = os.path.join(output_dir.name, "perf.data")
         perf = run_perf_record_util(list(set(args.cpus + args.affinity)), perf_data_file)
 
         # Wait till sender is done sending
         mark_receiver_ready()
         is_sender_done()
 
-        # Kill all the iperfs and perf
+        # Kill perf
         perf.send_signal(signal.SIGINT)
         perf.wait()
-        for p in iperfs + netperfs:
+
+        # Kill all the processes
+        for p in procs:
             p.kill()
-        for p in iperfs + netperfs:
-            p.wait()
         print("[util breakdown] finished experiment.")
 
         # Process and write the raw output
-        throughput = 0
-        for i, p in enumerate(iperfs):
+        for i, p in enumerate(procs):
             lines = p.stdout.readlines()
             if args.output is not None:
-                with open(os.path.join(args.output, "util-breakdown_iperf_{}.log".format(i)), "w") as f:
+                with open(os.path.join(args.output, "util-breakdown_benchmark_{}.log".format(i)), "w") as f:
                     f.writelines(lines)
-            throughput += process_iperf_output(lines)
 
         # Start a perf report instance
         perf = run_perf_report(perf_data_file)
         perf.wait()
         output_dir.cleanup()
         lines = perf.stdout.readlines()
-        total_contrib, unaccounted_contrib, util_contibutions, not_found = process_perf_report_output(lines)
+        total_contrib, unaccounted_contrib, util_contibutions, not_found = process_util_breakdown_output(lines)
         if args.output is not None:
             with open(os.path.join(args.output, "util-breakdown_perf.log"), "w") as f:
                 f.writelines(lines)
 
         # Print the output
-        print("[util breakdown] total throughput: {:.3f}\ttotal contribution: {:.3f}\tunaccounted contribution: {:.3f}".format(throughput, total_contrib, unaccounted_contrib))
+        print("[util breakdown] total contribution: {:.3f}\tunaccounted contribution: {:.3f}".format(total_contrib, unaccounted_contrib))
         if unaccounted_contrib > 5:
             print("[util breakdown] unknown symbols: {}".format(", ".join(not_found)))
 
@@ -442,51 +453,46 @@ if __name__ == "__main__":
         is_sender_ready()
         print("[cache breakdown] starting experiment...")
 
-        # Start iperf instances
-        iperfs = run_iperfs(args.config, args.num_connections, args.cpus, args.window)
-
-        # Start netperf instances
-        netperfs = run_netperfs(args.cpus[0], args.num_rpcs)
+        # Start iperf and/or netperf instances
+        procs = run_flows(args.flow_type, args.config, args.num_connections, args.num_rpcs, args.cpus, args.window)
 
         # Start the perf instance
         output_dir = tempfile.TemporaryDirectory()
-        perf_data_file = os.path.join(output_dir.name, PERF_DATA)
+        perf_data_file = os.path.join(output_dir.name, "perf.data")
         perf = run_perf_record_cache(list(set(args.cpus + args.affinity)), perf_data_file)
 
         # Wait till sender is done sending
         mark_receiver_ready()
         is_sender_done()
 
-        # Kill all the iperfs and perf
+        # Kill perf
         perf.send_signal(signal.SIGINT)
         perf.wait()
-        for p in iperfs + netperfs:
+
+        # Kill all the processes
+        for p in procs:
             p.kill()
-        for p in iperfs + netperfs:
-            p.wait()
         print("[cache breakdown] finished experiment.")
 
         # Process and write the raw output
-        throughput = 0
-        for i, p in enumerate(iperfs):
+        for i, p in enumerate(procs):
             lines = p.stdout.readlines()
             if args.output is not None:
-                with open(os.path.join(args.output, "cache-breakdown_iperf_{}.log".format(i)), "w") as f:
+                with open(os.path.join(args.output, "cache-breakdown_benchmark_{}.log".format(i)), "w") as f:
                     f.writelines(lines)
-            throughput += process_iperf_output(lines)
 
         # Start a perf report instance
         perf = run_perf_report(perf_data_file)
         perf.wait()
         output_dir.cleanup()
         lines = perf.stdout.readlines()
-        total_contrib, unaccounted_contrib, cache_contibutions, not_found = process_perf_report_output(lines)
+        total_contrib, unaccounted_contrib, cache_contibutions, not_found = process_util_breakdown_output(lines)
         if args.output is not None:
             with open(os.path.join(args.output, "cache-breakdown_perf.log"), "w") as f:
                 f.writelines(lines)
 
         # Print the output
-        print("[cache breakdown] total throughput: {:.3f}\ttotal contribution: {:.3f}\tunaccounted contribution: {:.3f}".format(throughput, total_contrib, unaccounted_contrib))
+        print("[cache breakdown] total contribution: {:.3f}\tunaccounted contribution: {:.3f}".format(total_contrib, unaccounted_contrib))
         if unaccounted_contrib > 5:
             print("[cache breakdown] unknown symbols: {}".format(", ".join(not_found)))
 
@@ -495,80 +501,71 @@ if __name__ == "__main__":
         is_sender_ready()
         print("[flame] starting experiment...")
 
-        # Start iperf instances
-        iperfs = run_iperfs(args.config, args.num_connections, args.cpus, args.window)
-
-        # Start netperf instances
-        netperfs = run_netperfs(args.cpus[0], args.num_rpcs)
+       # Start iperf and/or netperf instances
+        procs = run_flows(args.flow_type, args.config, args.num_connections, args.num_rpcs, args.cpus, args.window)
 
         # Start the perf instance
         output_dir = tempfile.TemporaryDirectory()
-        perf_data_file = os.path.join(output_dir.name, PERF_DATA)
+        perf_data_file = os.path.join(output_dir.name, "perf.data")
         perf = run_perf_record_flame(list(set(args.cpus + args.affinity)), perf_data_file)
 
         # Wait till sender is done sending
         mark_receiver_ready()
         is_sender_done()
 
-        # Kill all the iperfs and perf
+        # Kill perf
         perf.send_signal(signal.SIGINT)
         perf.wait()
-        for p in iperfs + netperfs:
+
+        # Kill all the processes
+        for p in procs:
             p.kill()
-        for p in iperfs + netperfs:
-            p.wait()
         print("[flame] finished experiment.")
 
         # Process and write the raw output
-        throughput = 0
-        for i, p in enumerate(iperfs):
+        for i, p in enumerate(procs):
             lines = p.stdout.readlines()
             if args.output is not None:
-                with open(os.path.join(args.output, "flame_iperf_{}.log".format(i)), "w") as f:
+                with open(os.path.join(args.output, "flame_benchmark_{}.log".format(i)), "w") as f:
                     f.writelines(lines)
-            throughput += process_iperf_output(lines)
 
         # Start a perf report instance
         output_svg_file = os.path.join(args.output, "flame.svg")
         run_flamegraph(perf_data_file, output_svg_file)
         output_dir.cleanup()
 
-        # Print the output
-        print("[flame] total throughput: {:.3f}".format(throughput))
-
     if args.latency:
         # Clear dmesg
         dmesg_clear()
+
+        # Enable latency measurement
+        latency_measurement(enabled=True)
 
         # Wait till sender starts
         is_sender_ready()
         print("[latency] starting experiment...")
 
-        # Start iperf instances
-        iperfs = run_iperfs(args.config, args.num_connections, args.cpus, args.window)
-
-        # Start netperf instances
-        netperfs = run_netperfs(args.cpus[0], args.num_rpcs)
+        # Start iperf and/or netperf instances
+        procs = run_flows(args.flow_type, args.config, args.num_connections, args.num_rpcs, args.cpus, args.window)
 
         # Wait till sender is done sending
         mark_receiver_ready()
         is_sender_done()
 
-        # Kill all the iperfs and dmesg
-        for p in iperfs + netperfs:
+        # Kill all the processes
+        for p in procs:
             p.kill()
-        for p in iperfs + netperfs:
-            p.wait()
         print("[latency] finished experiment.")
 
+        # Disable latency measurement
+        latency_measurement(enabled=False)
+
         # Process and write the raw output
-        throughput = 0
-        for i, p in enumerate(iperfs):
+        for i, p in enumerate(procs):
             lines = p.stdout.readlines()
             if args.output is not None:
-                with open(os.path.join(args.output, "latency_iperf_{}.log".format(i)), "w") as f:
+                with open(os.path.join(args.output, "latency_benchmark_{}.log".format(i)), "w") as f:
                     f.writelines(lines)
-            throughput += process_iperf_output(lines)
 
         # Start a dmesg instance to read the kernel logs
         dmesg = run_dmesg()
@@ -581,15 +578,60 @@ if __name__ == "__main__":
         if args.output is not None:
             with open(os.path.join(args.output, "latency_dmesg.log"), "w") as f:
                 f.writelines(lines)
-        avg_latency, tail_latency = process_dmesg_output(lines)
+        avg_latency, tail_latency = process_latency_output(lines)
 
         # Print the output
-        print("[latency] total throughput: {:.3f}\tavg. data copy latency: {:.3f}\ttail data copy latency: {}".format(throughput, avg_latency, tail_latency))
+        print("[latency] avg. data copy latency: {:.3f}\ttail data copy latency: {}".format(avg_latency, tail_latency))
         header.append("avg. data copy latency (us)")
         output.append("{:.3f}".format(avg_latency))
         header.append("tail data copy latency (us)")
         output.append("{}".format(tail_latency))
 
+    if args.skb_hist:
+        # Clear dmesg
+        dmesg_clear()
+
+        # Enable skb size histogram measurement
+        skb_hist_measurement(enabled=True)
+
+        # Wait till sender starts
+        is_sender_ready()
+        print("[skb hist] starting experiment...")
+
+        # Start iperf and/or netperf instances
+        procs = run_flows(args.flow_type, args.config, args.num_connections, args.num_rpcs, args.cpus, args.window)
+
+        # Wait till sender is done sending
+        mark_receiver_ready()
+        is_sender_done()
+
+        # Kill all the processes
+        for p in procs:
+            p.kill()
+        print("[skb hist] finished experiment.")
+
+        # Disable skb size histogram measurement
+        skb_hist_measurement(enabled=False)
+
+        # Process and write the raw output
+        for i, p in enumerate(procs):
+            lines = p.stdout.readlines()
+            if args.output is not None:
+                with open(os.path.join(args.output, "skb-hist_benchmark_{}.log".format(i)), "w") as f:
+                    f.writelines(lines)
+
+        # Start a dmesg instance to read the kernel logs
+        dmesg = run_dmesg()
+        lines = []
+        while True:
+            new_lines = dmesg.stdout.readlines()
+            lines += new_lines
+            if len(new_lines) == 0 and dmesg.poll() != None:
+                break
+        if args.output is not None:
+            with open(os.path.join(args.output, "skb-hist_dmesg.log"), "w") as f:
+                f.writelines(lines)
+        skb_sizes = process_skb_sizes_output(lines)
 
     # Sync with server again
     mark_receiver_ready()
@@ -598,6 +640,9 @@ if __name__ == "__main__":
     # Close the server
     server.shutdown()
     server_thread.join()
+
+    # Reset packet drop rate
+    set_packet_drop_rate(0)
 
     # Print final stats
     if len(header) > 0:
@@ -616,5 +661,9 @@ if __name__ == "__main__":
         print("\t".join(keys))
         print("\t".join(["{:.3f}".format(cache_contibutions[k]) for k in keys]))
 
-    
+    # Print skb sizes histogram
+    if args.skb_hist:
+        keys = [500] + list(range(5000, 65000, 5000))
+        print("\t".join(keys))
+        print("\t".join(["{:.3f}".format(s) for s in skb_sizes]))
 

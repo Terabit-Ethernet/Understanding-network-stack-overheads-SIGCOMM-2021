@@ -2,6 +2,7 @@
 
 import argparse
 import os as _os
+from constants import *
 
 
 # For debugging
@@ -12,38 +13,13 @@ class os:
         _os.system(p)
 
 
-# In the default IRQ affinity config mode
-# ID of the RX queue for each CPU 0-23
-CPU_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8 1 9 10 11 2 12 13 14 3 15 16 17 4 18 19 20 5 21 22 23".split()]
-
-
-# In the default IRO affinity config mode
-# (one of) the RX queue(s) which has DMA on NUMA 0-3
-NUMA_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8".split()]
-
-
-# DDIO IO WAYS LLC mm register location
-DDIO_REG = 0xc8b
-
-
-# Base port of using iperf and netperf
-IPERF_BASE_PORT = 30000
-NETPERF_BASE_PORT = 40000
-
-
-# Maximum number of connections
-CPUS = [0, 2, 4, 6, 8, 12, 14, 16, 18, 20, 22]
-CPUS = [ i for i in range(24)]
-MAX_CONNECTIONS = len(CPUS)
-MAX_RPCS = 16
-
-
 def parse_args():
     parser = argparse.ArgumentParser(description="Configure the network interface.")
 
     # Configuration for setting the IRQ affinity
     parser.add_argument('--sender', action='store_true', default=None, help='This is the sender.')
     parser.add_argument('--receiver', action='store_true', default=None, help='This is the receiver.')
+    parser.add_argument("--flow-type", choices=["long", "short", "mixed"], default="long", help="Flow type to run the experiment with.")
     parser.add_argument("--config", choices=["one-to-one", "incast", "outcast", "all-to-all", "single"], default="single", help="Configuration to run the experiment with.")
 
     # Parse basic parameters
@@ -83,12 +59,12 @@ def parse_args():
             print("Can't set both --sender and --receiver.")
             exit(1)
 
-        if args.config is None:
-            print("Must set --config when using --no-arfs.")
-            exit(1)
-
         if args.sender is None and args.receiver is None:
             print("Must set one of --sender or --receiver with --no-arfs.")
+            exit(1)
+
+        if args.flow_type == "mixed" and args.config != "single":
+            print("Can't set --flow-type mixed without --config single.")
             exit(1)
 
     if args.mtu is not None and not (0 < args.mtu <= 9000):
@@ -139,11 +115,15 @@ def set_irq_affinity(iface):
 
 def ntuple_send_port_to_queue(iface, port, n, loc):
     os.system("ethtool -U {} flow-type tcp4 dst-port {} action {} loc {}".format(iface, port, n, loc))
-    os.system("ethtool -U {} flow-type tcp4 src-port {} action {} loc {}".format(iface, port, n, loc + MAX_CONNECTIONS * MAX_CONNECTIONS + MAX_RPCS))
+    os.system("ethtool -U {} flow-type tcp4 src-port {} action {} loc {}".format(iface, port, n, MAX_RULE_LOC - loc))
+
+
+def ntuple_send_all_traffic_to_queue(iface, port, n, loc):
+    os.system("ethtool -U {} flow-type tcp4 action {} loc {}".format(iface, n, loc))
 
 
 def ntuple_clear_rules(iface):
-    for i in range(2 * (MAX_CONNECTIONS * MAX_CONNECTIONS + MAX_RPCS)):
+    for i in range(MAX_RULE_LOC + 1):
         os.system("ethtool -U {} delete {} 2> /dev/null > /dev/null".format(iface, i), False)
 
 
@@ -156,67 +136,56 @@ def setup_irq_mode_arfs(iface):
     ntuple_clear_rules(iface)
 
 
-def setup_irq_mode_no_arfs_sender(iface, config):
+def setup_irq_mode_no_arfs_sender(iface, flow_type, config):
     stop_irq_balance()
     manage_rps(iface, False)
-    manage_ntuple(iface, True)
     ntuple_clear_rules(iface)
     set_irq_affinity(iface)
-    loc = 0
-    if config in ["one-to-one", "incast", "single"]:
-        cpus = [(cpu, IPERF_BASE_PORT + n) for n, cpu in enumerate(CPUS)]
-    if config == "outcast":
-        cpus = [(CPUS[0], IPERF_BASE_PORT + n) for n in range(MAX_CONNECTIONS)]
-    if config == "all-to-all":
-        cpus = []
-        for i, sender_cpu in enumerate(CPUS):
-            for j, receiver_cpu in enumerate(CPUS):
-                cpus.append((sender_cpu, IPERF_BASE_PORT + MAX_CONNECTIONS * i + j))
-    # # try RSS for all-to-all case
-    if config in ["all-to-all"]:
-        return
-    for n, (cpu, port) in enumerate(cpus):
-        ntuple_send_port_to_queue(iface, port, CPU_TO_RX_QUEUE_MAP[(cpu + 1) % (len(CPU_TO_RX_QUEUE_MAP))], loc)
-        loc += 1
-    for n in range(MAX_RPCS):
-        ntuple_send_port_to_queue(iface, NETPERF_BASE_PORT + n, CPU_TO_RX_QUEUE_MAP[CPUS[0] + 1], loc)
-        loc += 1
 
-def setup_irq_mode_no_arfs_receiver(iface, config):
+    # For single flow or outcast, we have to send all traffic to core 1;
+    # for one-to-one and outcast, we use flow steering to the next core;
+    # otherwise we just use RSS
+    if config in ["outcast", "single"]:
+        manage_ntuple(iface, True)
+        ntuple_send_all_traffic_to_queue(iface, CPU_TO_RX_QUEUE_MAP[1], 0)
+    elif config in ["incast", "one-to-one"]:
+        manage_ntuple(iface, True)
+        for n, cpu in zip(range(MAX_CONNECTIONS), CPUS):       
+            q = CPU_TO_RX_QUEUE_MAP[(cpu + 1) % MAX_CPUS]
+            ntuple_send_port_to_queue(iface, BASE_PORT + n, q, n)
+    else:
+        manage_ntuple(iface, False)
+
+
+def setup_irq_mode_no_arfs_receiver(iface, flow_type, config):
     stop_irq_balance()
     manage_rps(iface, False)
-    manage_ntuple(iface, True)
     ntuple_clear_rules(iface)
     set_irq_affinity(iface) 
-    loc = 0
-    if config in ["one-to-one", "outcast", "single"]:
-        cpus = [(cpu, IPERF_BASE_PORT + n) for n, cpu in enumerate(CPUS)]
-    if config == "incast":
-        cpus = [(CPUS[0], IPERF_BASE_PORT + n) for n in range(MAX_CONNECTIONS)]
-    if config == "all-to-all":
-        cpus = []
-        for i, sender_cpu in enumerate(CPUS):
-            for j, receiver_cpu in enumerate(CPUS):
-                cpus.append((receiver_cpu, IPERF_BASE_PORT + MAX_CONNECTIONS * i + j))
-    # try RSS for all-to-all case
-    if config in ["all-to-all"]:
-        return
-    for n, (cpu, port) in enumerate(cpus):
-        ntuple_send_port_to_queue(iface, port, CPU_TO_RX_QUEUE_MAP[(cpu + 1) % (len(CPU_TO_RX_QUEUE_MAP))], loc)
-        loc += 1
-    for n in range(MAX_RPCS):
-        ntuple_send_port_to_queue(iface, NETPERF_BASE_PORT + n, CPU_TO_RX_QUEUE_MAP[CPUS[0] + 1], loc)
-        loc += 1
+
+    # For single flow or incast, we have to send all traffic to core 1;
+    # for one-to-one and outcast, we use flow steering to next core;
+    # otherwise we just use RSS
+    if config in ["incast", "single"]:
+        manage_ntuple(iface, True)
+        ntuple_send_all_traffic_to_queue(iface, CPU_TO_RX_QUEUE_MAP[1], 0)
+    elif config in ["outcast", "one-to-one"]:
+        manage_ntuple(iface, True)
+        for n, cpu in zip(range(MAX_CONNECTIONS), CPUS):       
+            q = CPU_TO_RX_QUEUE_MAP[(cpu + 1) % MAX_CPUS]
+            ntuple_send_port_to_queue(iface, BASE_PORT + n, q, n)
+    else:
+        manage_ntuple(iface, False)
 
 
-def setup_affinity_mode(iface, arfs, sender, receiver, config):
+def setup_affinity_mode(iface, arfs, sender, receiver, flow_type, config):
     if arfs is not None:
         if arfs:
             setup_irq_mode_arfs(iface)
         elif sender is not None and sender:
-            setup_irq_mode_no_arfs_sender(iface, config)
+            setup_irq_mode_no_arfs_sender(iface, flow_type, config)
         elif receiver is not None and receiver:
-            setup_irq_mode_no_arfs_receiver(iface, config)
+            setup_irq_mode_no_arfs_receiver(iface, flow_type, config)
 
 
 # Set connection speed
@@ -247,8 +216,11 @@ def manage_offloads(iface, lro, tso, gso, gro, checksum):
 
 # Increase socket memory size limit
 def increase_sock_size_limit(enabled):
-    if enabled:
-        os.system("sysctl -w net.core.wmem_max=12582912 && sysctl -w net.core.rmem_max=12582912")
+    if enabled is not None:
+        if enabled:
+            os.system("sysctl -w net.core.wmem_max=12582912 && sysctl -w net.core.rmem_max=12582912")
+        else:
+            os.system("sysctl -w net.core.wmem_max=212992 && sysctl -w net.core.rmem_max=212992")
 
 
 # Set DDIO ways
@@ -266,7 +238,7 @@ if __name__ == "__main__":
     manage_offloads(args.interface, args.lro, args.tso, args.gso, args.gro, args.checksum)
 
     # Set IRQ config
-    setup_affinity_mode(args.interface, args.arfs, args.sender, args.receiver, args.config)
+    setup_affinity_mode(args.interface, args.arfs, args.sender, args.receiver, args.flow_type, args.config)
 
     # Setup other config
     set_speed(args.interface, args.speed)

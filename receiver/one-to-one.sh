@@ -1,4 +1,7 @@
-iface=$1
+# Parse arguments
+# Example: ./one-to-one.sh enp37s0f1
+iface=${1:-enp37s0f1}
+
 # No Optimisations
 ./network_setup.py $iface --no-lro --no-gso --no-gro --no-tso --no-arfs --config one-to-one --receiver --mtu 1500 --sock-size
 for i in 8 16 24; do

@@ -1,4 +1,7 @@
-iface=$1
+# Parse arguments
+# Example: ./single-flow.sh enp37s0f1
+iface=${1:-enp37s0f1}
+
 # No Optimisations
 ./network_setup.py $iface --no-lro --no-gso --no-gro --no-tso --no-arfs --receiver --mtu 1500 --sock-size
 ./run_experiment_receiver.py --throughput --utilisation --cache-miss --util-breakdown --output results/single-flow_no-opts | tee results/single-flow_no-opts.log
