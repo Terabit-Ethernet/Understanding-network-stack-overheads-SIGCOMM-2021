@@ -164,7 +164,7 @@ ___x__ <- NUMA ID
 
 The index in the bitmap denotes the core ID. The number `x` denotes the NUMA node of the core when interpreted as a bitmap. So the bitmap `002000` will be interpreted as 2nd NUMA (`2 = 0010`) and since it's at index 4 from the left, it's the 4th core. So this is the 4th core in 2nd NUMA node which is core 13. 
 
-3. Change CPU_TO_RX_QUEUE_MAP in the `constants.py`. This is the mapping from CPUs to their corresponding receive queues. For the example stated above, the mapping is:
+3. Change `CPU_TO_RX_QUEUE_MAP` in the `constants.py`. This is the mapping from CPUs to their corresponding receive queues. For the example stated above, the mapping is:
 
 ```
 CPU_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8 1 9 10 11 2 12 13 14 3 15 16 17 4 18 19 20 5 21 22 23".split()]
@@ -172,7 +172,7 @@ CPU_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8 1 9 10 11 2 12 13 14 3 15 16 17 
 
 Core 0 maps to queue 0 (IRQ 153), Core 1 maps to queue 6 (IRQ 159).
 
-4. Change NUMA_TO_RX_QUEUE_MAP in the `network_setup.py`; it would be the first CPU node in each NUMA node; for example, if the server has 4 NUMA nodes and Core 0 is in NUMA node 0, Core 1 is in NUMA node 1, Core 2 is in NUMA noded 2, Core 3 is in NUMA node 3, then
+4. Change `NUMA_TO_RX_QUEUE_MAP` in the `constants.py`; it would be the first CPU node in each NUMA node; for example, if the server has 4 NUMA nodes and Core 0 is in NUMA node 0, Core 1 is in NUMA node 1, Core 2 is in NUMA noded 2, Core 3 is in NUMA node 3, then
 
 ```
 NUMA_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8".split()]
@@ -209,11 +209,11 @@ data_copy etc   lock  mm    netdev sched skb   tcp/ip
 
 ## 4. Artifact Evaluation
 
-Enter the sudo mode first and then enter the directory:
+All experiments must be run as `sudo`.
 
 ```
  sudo -s
- cd terabit-network-stack-profiling
+ cd ~/terabit-network-stack-profiling
 ```
 
 - Figure 3(a)-3(d) (Single Flow):
