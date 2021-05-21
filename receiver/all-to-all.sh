@@ -26,5 +26,5 @@ done
 # TSO/GRO+Jumbo Frame+aRFS
 ./network_setup.py $iface --arfs
 for i in 8 16 24; do
-        ./run_experiment_receiver.py --config all-to-all --num-connections $i --throughput --utilisation --cache-miss --util-breakdown --arfs --output results/all-to-all_${i}_all-opts | tee results/all-to-all_${i}_all-opts.log
+        ./run_experiment_receiver.py --config all-to-all --num-connections $i --throughput --utilisation --cache-miss --util-breakdown --skb-hist --arfs --output results/all-to-all_${i}_all-opts | tee results/all-to-all_${i}_all-opts.log
 done

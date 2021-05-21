@@ -212,49 +212,50 @@ data_copy etc   lock  mm    netdev sched skb   tcp/ip
 All experiments must be run as `sudo`.
 
 ```
- sudo -s
- cd ~/terabit-network-stack-profiling
+sudo -s
+cd ~/terabit-network-stack-profiling
+mkdir results
 ```
 
 - Figure 3(a)-3(d) (Single Flow):
-   - Sender: ```sh ./sender/single-flow.sh 128.84.155.115 192.168.10.115 enp37s0f1```
-   - Receiver: ```sh ./receiver/single-flow.sh enp37s0f1```
+   - Sender: `bash -x ./sender/single-flow.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash -x ./receiver/single-flow.sh enp37s0f1`
 
 - Figure 3(e)-3(f) (Single Flow):
-   - Sender: ```sh ./sender/tcp-buffer.sh 128.84.155.115 192.168.10.115 enp37s0f1```
-   - Receiver: ```sh ./receiver/tcp-buffer.sh enp37s0f1```
+   - Sender: `bash -x ./sender/tcp-buffer.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash -x ./receiver/tcp-buffer.sh enp37s0f1`
 
 - Figure 4(a)-4(b) (One-to-One):
-   - Sender: ```sh ./sender/one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1```
-   - Receiver: ```sh ./receiver/one-to-one.sh enp37s0f1```
+   - Sender: `bash -x ./sender/one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash -x ./receiver/one-to-one.sh enp37s0f1`
 
 - Figure 5 (Incast):
-   - Sender: ```sh ./sender/incast.sh 128.84.155.115 192.168.10.115 enp37s0f1```
-   - Receiver: ```sh ./receiver/incast.sh enp37s0f1```
+   - Sender: `bash -x ./sender/incast.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash -x ./receiver/incast.sh enp37s0f1`
 
 - Figure 6 (All-to-All):
-   - Sender: ```sh ./sender/all-to-all.sh 128.84.155.115 192.168.10.115 enp37s0f1```
-   - Receiver: ```sh ./receiver/all-to-all.sh enp37s0f1```
+   - Sender: `bash -x ./sender/all-to-all.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash -x ./receiver/all-to-all.sh enp37s0f1`
 
 - Figure 7 (Packet Drop):
-   - Sender: ```sh ./sender/packet-drop.sh 128.84.155.115 192.168.10.115 enp37s0f1```
-   - Receiver: ```sh ./receiver/packet-drop.sh enp37s0f1```
+   - Sender: `bash -x ./sender/packet-drop.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash -x ./receiver/packet-drop.sh enp37s0f1`
 
 - Figure 8(a)-8(b) (Short Flow Incast):
-   - Sender: ```sh ./sender/short-incast.sh 128.84.155.115 192.168.10.115 enp37s0f1```
-   - Receiver: ```sh ./receiver/short-incast.sh enp37s0f1```
+   - Sender: `bash -x ./sender/short-incast.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash -x ./receiver/short-incast.sh enp37s0f1`
 
 - Figure 9 (Mixed Flow):
-   - Sender: ```sh ./sender/mixed.sh 128.84.155.115 192.168.10.115 enp37s0f1```
-   - Receiver: ```sh ./receiver/mixed.sh enp37s0f1```
+   - Sender: `bash -x ./sender/mixed.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash -x ./receiver/mixed.sh enp37s0f1`
 
 - Figure 4(c) and 8(c) (Local vs Remote NUMA):
-   - Sender: ```sh ./sender/numa.sh 128.84.155.115 192.168.10.115 enp37s0f1```
-   - Receiver: ```sh ./receiver/numa.sh enp37s0f1```
+   - Sender: `bash -x ./sender/numa.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash -x ./receiver/numa.sh enp37s0f1`
 
 - Outcast:
-   - Sender: ``` sh ./sender/one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1 ```
-   - Receiver: ``` sh ./receiver/one-to-one.sh enp37s0f1 ```
+   - Sender: ` sh ./sender/one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: ` sh ./receiver/one-to-one.sh enp37s0f1`
 
 ## Authors
 
