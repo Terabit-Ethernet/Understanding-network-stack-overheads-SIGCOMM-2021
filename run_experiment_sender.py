@@ -18,9 +18,15 @@ class subprocess:
     PIPE = _sp.PIPE
     DEVNULL = _sp.DEVNULL
     STDOUT = _sp.STDOUT
+    QUIET = False
+
+    @staticmethod
+    def quiet():
+        subprocess.QUIET = True
+
     @staticmethod
     def Popen(*args, **kwargs):
-        print("+ " + " ".join(shlex.quote(s) for s in args[0]))
+        if not subprocess.QUIET: print("+ " + " ".join(shlex.quote(s) for s in args[0]))
         return _sp.Popen(*args, **kwargs)
 
 
@@ -49,6 +55,7 @@ def parse_args():
     parser.add_argument("--flame", action="store_true", help="Create a flame graph from the experiment.")
     parser.add_argument("--latency", action="store_true", help="Calculate the average data copy latency for each packet.")
     parser.add_argument("--skb-hist", action="store_true", help="Record the skb sizes histogram.")
+    parser.add_argument("--verbose", dest="quiet", action="store_false", help="Print extra output.")
 
     # Parse and verify arguments
     args = parser.parse_args()
@@ -163,7 +170,7 @@ def run_flows(flow_type, config, addr, num_connections, num_rpcs, cpus, duration
 
     procs = []
     if config == "single":
-        procs.append(flow_func(cpu[0], addr, BASE_PORT, duration, window, rpc_size))
+        procs.append(flow_func(cpus[0], addr, BASE_PORT, duration, window, rpc_size))
     elif config == "incast":
         procs += [flow_func(cpus[0], addr, BASE_PORT + n, duration, window, rpc_size) for n in range(num_connections)]
     elif config in ["one-to-one", "outcast"]:
@@ -171,7 +178,7 @@ def run_flows(flow_type, config, addr, num_connections, num_rpcs, cpus, duration
     elif config == "all-to-all":
         for i, sender_cpu in enumerate(cpus):
             for j, receiver_cpu in enumerate(cpus):
-                procs.append(flow_func(sender_cpu, BASE_PORT + MAX_CONNECTIONS * i + j, duration, window, rpc_size))
+                procs.append(flow_func(sender_cpu, addr, BASE_PORT + MAX_CONNECTIONS * i + j, duration, window, rpc_size))
 
     # If we're running mixed flow experiments run some additional
     # short flows
@@ -220,6 +227,8 @@ def run_sar(cpus):
 if __name__ == "__main__":
     # Parse args
     args = parse_args()
+    if args.quiet:
+        subprocess.quiet()
 
     # Create the XMLRPC proxy
     receiver = xmlrpc.client.ServerProxy("http://{}:{}".format(args.receiver, COMM_PORT), allow_none=True)
@@ -407,7 +416,7 @@ if __name__ == "__main__":
 
         # Print the output
         print("[util breakdown] total throughput: {:.3f}\ttotal contribution: {:.3f}\tunaccounted contribution: {:.3f}".format(throughput, total_contrib, unaccounted_contrib))
-        if unaccounted_contrib > 5:
+        if unaccounted_contrib > 5 and not args.quiet:
             print("[util breakdown] unknown symbols: {}".format(", ".join(not_found)))
 
     if args.cache_breakdown:
@@ -461,7 +470,7 @@ if __name__ == "__main__":
 
         # Print the output
         print("[cache breakdown] total throughput: {:.3f}\ttotal contribution: {:.3f}\tunaccounted contribution: {:.3f}".format(throughput, total_contrib, unaccounted_contrib))
-        if unaccounted_contrib > 5:
+        if unaccounted_contrib > 5 and not args.quiet:
             print("[cache breakdown] unknown symbols: {}".format(", ".join(not_found)))
 
     if args.flame:
@@ -551,7 +560,7 @@ if __name__ == "__main__":
 
         # Sender is done sending
         receiver.mark_sender_done()
-        print("[skb hist] finished experiment.")
+        print("[skb sizes histogram] finished experiment.")
 
         # Process and write the raw output
         throughput = 0
@@ -563,7 +572,7 @@ if __name__ == "__main__":
             throughput += process_throughput_output(lines)
 
         # Print the output
-        print("[skb hist] total throughput: {:.3f}".format(throughput))
+        print("[skb sizes histogram] total throughput: {:.3f}".format(throughput))
 
     # Sync with receiver before exiting
     receiver.is_receiver_ready()
@@ -573,6 +582,9 @@ if __name__ == "__main__":
     time.sleep(1)
 
     # Print final stats
+    if len(header) > 0 or args.util_breakdown or args.cache_breakdown:
+        print("[summary]")
+
     if len(header) > 0:
         print("\t".join(header))
         print("\t".join(output))
@@ -580,12 +592,14 @@ if __name__ == "__main__":
     # Print utilisation breakdown if required
     if args.util_breakdown:
         keys = sorted(util_contibutions.keys())
+        print("[utilisation breakdown]")
         print("\t".join(keys))
         print("\t".join(["{:.3f}".format(util_contibutions[k]) for k in keys]))
 
     # Print cache breakdown if required
     if args.cache_breakdown:
         keys = sorted(cache_contibutions.keys())
+        print("[cache breakdown]")
         print("\t".join(keys))
         print("\t".join(["{:.3f}".format(cache_contibutions[k]) for k in keys]))
 

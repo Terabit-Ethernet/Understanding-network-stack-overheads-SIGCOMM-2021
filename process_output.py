@@ -102,11 +102,13 @@ def process_latency_output(lines):
 def process_skb_sizes_output(lines):
     skb_sizes = [0 for _ in range(13)]
     for line in lines:
-        try:
-            counts = re.match(r"^.*\[skb-sizes\] (.*)$", line).group(1).split()
-            for idx, c in enumerate(counts):
-                skb_sizes[idx] += c
-        except:
-            pass
+        counts = re.match(r"^.*\[skb-sizes\] (.*)$", line)
+        if counts is not None:
+            for idx, c in enumerate(counts.group(1).split()):
+                skb_sizes[idx] += int(c)
     total = sum(skb_sizes)
-    return [s / total for s in skb_sizes]
+    if total == 0:
+        return skb_sizes
+    else:
+        return [s / total for s in skb_sizes]
+

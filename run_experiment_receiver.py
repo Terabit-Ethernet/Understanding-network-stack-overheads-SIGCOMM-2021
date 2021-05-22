@@ -18,9 +18,15 @@ class subprocess:
     PIPE = _sp.PIPE
     DEVNULL = _sp.DEVNULL
     STDOUT = _sp.STDOUT
+    QUIET = False
+
+    @staticmethod
+    def quiet():
+        subprocess.QUIET = True
+
     @staticmethod
     def Popen(*args, **kwargs):
-        print("+ " + " ".join(shlex.quote(s) for s in args[0]))
+        if not subprocess.QUIET: print("+ " + " ".join(shlex.quote(s) for s in args[0]))
         return _sp.Popen(*args, **kwargs)
 
 
@@ -46,6 +52,7 @@ def parse_args():
     parser.add_argument("--flame", action="store_true", help="Create a flamegraph from the experiment.")
     parser.add_argument("--latency", action="store_true", help="Calculate the average data copy latency for each packet.")
     parser.add_argument("--skb-hist", action="store_true", help="Record the skb sizes histogram.")
+    parser.add_argument("--verbose", dest="quiet", action="store_false", help="Print extra output.")
 
     # Parse and verify arguments
     args = parser.parse_args()
@@ -204,7 +211,7 @@ def run_flows(flow_type, config, num_connections, num_rpcs, cpus, window):
     
     procs = []
     if config == "single":
-        procs.append(flow_func(cpu[0], BASE_PORT, window))
+        procs.append(flow_func(cpus[0], BASE_PORT, window))
     elif config == "incast":
         procs += [flow_func(cpus[0], BASE_PORT + n, window) for n in range(num_connections)]
     elif config in ["one-to-one", "outcast"]:
@@ -283,6 +290,8 @@ def set_packet_drop_rate(rate):
 if __name__ == "__main__":
     # Parse args
     args = parse_args()
+    if args.quiet:
+        subprocess.quiet()
 
     # Start the XMLRPC server thread
     server_thread.start()
@@ -447,7 +456,7 @@ if __name__ == "__main__":
 
         # Print the output
         print("[util breakdown] total contribution: {:.3f}\tunaccounted contribution: {:.3f}".format(total_contrib, unaccounted_contrib))
-        if unaccounted_contrib > 5:
+        if unaccounted_contrib > 5 and not args.quiet:
             print("[util breakdown] unknown symbols: {}".format(", ".join(not_found)))
 
     if args.cache_breakdown:
@@ -495,7 +504,7 @@ if __name__ == "__main__":
 
         # Print the output
         print("[cache breakdown] total contribution: {:.3f}\tunaccounted contribution: {:.3f}".format(total_contrib, unaccounted_contrib))
-        if unaccounted_contrib > 5:
+        if unaccounted_contrib > 5 and not args.quiet:
             print("[cache breakdown] unknown symbols: {}".format(", ".join(not_found)))
 
     if args.flame:
@@ -598,7 +607,7 @@ if __name__ == "__main__":
 
         # Wait till sender starts
         is_sender_ready()
-        print("[skb hist] starting experiment...")
+        print("[skb sizes histogram] starting experiment...")
 
         # Start iperf and/or netperf instances
         procs = run_flows(args.flow_type, args.config, args.num_connections, args.num_rpcs, args.cpus, args.window)
@@ -610,7 +619,7 @@ if __name__ == "__main__":
         # Kill all the processes
         for p in procs:
             p.kill()
-        print("[skb hist] finished experiment.")
+        print("[skb sizes histogram] finished experiment.")
 
         # Disable skb size histogram measurement
         skb_hist_measurement(enabled=False)
@@ -647,6 +656,9 @@ if __name__ == "__main__":
     set_packet_drop_rate(0)
 
     # Print final stats
+    if len(header) > 0 or args.util_breakdown or args.cache_breakdown or args.skb_hist:
+        print("[summary]")
+
     if len(header) > 0:
         print("\t".join(header))
         print("\t".join(output))
@@ -654,18 +666,21 @@ if __name__ == "__main__":
     # Print breakdown if required
     if args.util_breakdown:
         keys = sorted(util_contibutions.keys())
+        print("[utilisation breakdown]")
         print("\t".join(keys))
         print("\t".join(["{:.3f}".format(util_contibutions[k]) for k in keys]))
 
     # Print breakdown if required
     if args.cache_breakdown:
         keys = sorted(cache_contibutions.keys())
+        print("[cache breakdown]")
         print("\t".join(keys))
         print("\t".join(["{:.3f}".format(cache_contibutions[k]) for k in keys]))
 
     # Print skb sizes histogram
     if args.skb_hist:
         keys = [500] + list(range(5000, 65000, 5000))
-        print("\t".join(keys))
+        print("[skb sizes histogram]")
+        print("\t".join(map(str, keys)))
         print("\t".join(["{:.3f}".format(s) for s in skb_sizes]))
 
