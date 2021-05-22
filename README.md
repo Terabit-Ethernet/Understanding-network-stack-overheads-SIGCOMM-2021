@@ -1,6 +1,12 @@
 # Understanding Network Stack Performance for Terabit Ethernet Networks
 
-We provide here the scripts that can be used to profile the Linux kernel TCP stack running over terabit ethernet networks. The repository is organised as follows.
+## Overview
+
+We provide here the scripts that can be used to profile the Linux kernel TCP stack running over terabit ethernet networks. [Section 1](#organisation) describes the organisation of the repository. [section 2](#setup-servers) contains the steps required to setup the servers to perform profiling. This involves patching and installing an appproriate kernel, installing additional tools like `perf`, and configuring the NIC which one would like to use for the profiling. [Section 3](#running-an-experiment) gives a general overview of how to use our evaluation scripts. And finally, in [section 4](#sigcomm-2021-artefact-evaluation) you will find the necessary instructions to reproduce the results from our SIGCOMM 2021 paper.
+
+## Organisation
+
+The repository is organised as follows.
 
 * `kernel_patch` contains some modifications in the kernel code to enable efficient profiling of the TCP stack.
 * `scripts` contains scripts used to run experiments for our SIGCOMM 2021 paper.
@@ -14,7 +20,7 @@ We provide here the scripts that can be used to profile the Linux kernel TCP sta
 
 Below you will find instructions on how to use the tools provided in this repository to either reproduce our findings or profile your own setup to explore it's characteristics. 
 
-## Install Tools and Patch Kernel
+## Setup Servers
 
 ### Patch Linux Kernel to Enable Deep Profiling
 
@@ -131,7 +137,7 @@ sudo ifconfig <iface> <ip_addr>/<prefix_len>
 
 Here, `<iface>` is the network interface on which the experiments are to be run. Replace `<ip_addr>` and `<prefix_len>` by their appropriate values for the sender and receiver respectively.
 
-## Getting the Mapping Between CPU and Receive Queues of NIC
+### Getting the Mapping Between CPU and Receive Queues of NIC
 
 **NOTE** You only need to follow these instructions if your CPU or NIC configuration is different from ours.
 
@@ -205,7 +211,7 @@ CPU_TO_RX_QUEUE_MAP = [0, 6, 7, 8, 1, 9, 10, 11, 2, 12, 13, 14, 3, 15, 16, 17, 4
 
 Core 0 maps to queue 0 (IRQ 153), core 1 maps to queue 6 (IRQ 159).
 
-## 3. Running an Experiment
+## Running an Experiment
 
 To run any experiment (eg. Single Flow case), configure two servers as the sender and the receiver, and install the requisite kernel and tools on both of them. Then
 
@@ -238,7 +244,7 @@ data_copy etc   lock  mm    netdev sched skb   tcp/ip
 4.590     9.650 4.980 7.030 16.090 4.880 7.060 37.210
 ```
 
-## 4. SIGCOMM 2021 Artifact Evaluation
+## SIGCOMM 2021 Artifact Evaluation
 
 ### Hardware/Software Configuration
 
