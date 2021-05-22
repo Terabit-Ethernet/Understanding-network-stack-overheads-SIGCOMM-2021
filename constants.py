@@ -2,11 +2,7 @@
 
 # In the default IRQ affinity config mode
 # ID of the RX queue for each CPU 0-23
-CPU_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8 1 9 10 11 2 12 13 14 3 15 16 17 4 18 19 20 5 21 22 23".split()]
-
-# In the default IRO affinity config mode
-# (one of) the RX queue(s) which has DMA on NUMA 0-3
-NUMA_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8".split()]
+CPU_TO_RX_QUEUE_MAP = [0, 6, 7, 8, 1, 9, 10, 11, 2, 12, 13, 14, 3, 15, 16, 17, 4, 18, 19, 20, 5, 21, 22, 23]
 
 # DDIO IO WAYS LLC mm register location
 DDIO_REG = 0xc8b

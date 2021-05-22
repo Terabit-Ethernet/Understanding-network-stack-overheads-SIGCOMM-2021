@@ -1,6 +1,20 @@
 # Understanding Network Stack performance for Terabit Ethernet Networks
 
-## 1. Install Tools and Patch Kernel
+We provide here the scripts that can be used to profile the Linux kernel TCP stack running over terabit ethernet networks. The repository is organised as follows.
+
+* `kernel_patch` contains some modifications in the kernel code to enable efficient profiling of the TCP stack.
+* `scripts` contains scripts used to run experiments for our SIGCOMM 2021 paper.
+    * `scripts/sender` are the scripts that must be run on the sender-side.
+    * `scripts/receiver` are the respective receiver-side scripts.
+* `run_experiment_sender.py`, `run_experiment_receiver.py` are the scripts that actually run the experiment.
+    * `network_setup.py` allows us to configure the NIC to enable/disable various offloads, set parameters and so on.
+    * `constants.py` contains the constants used by our scripts.
+    * `process_output.py` contains utilily code to parse outputs from the benchmarking programs.
+* `symbol_mapping.tsv` is a map from kernel symbols/function names to the classification into one of seven categories depending on their function of their place in the kernel TCP stack.
+
+Below you will find instructions on how to use the tools provided in this repository to either reproduce our findings or to run the profiling on your own setup to explore it's behaviour. 
+
+## Install Tools and Patch Kernel
 
 ### Patch Linux Kernel to Enable Deep Profiling
 
@@ -79,7 +93,7 @@ sudo make perf_install prefix=/usr/
 3. Revise the path of `perf` in `constants.py`.
 
 ```
-PERF_PATH = "/path/to/perf"
+PERF_PATH = "/path/to/perf" (should be /usr/bin/perf if you used the above instructions)
 ```
 
 ### Install Flamegraph (Optional)
@@ -87,14 +101,14 @@ PERF_PATH = "/path/to/perf"
 1. Clone the Flamegraph tool. This tool is useful for understanding/visualizing the data path of the kernel.
 
 ```
-cd ~
+cd /opt/
 sudo git clone https://github.com/brendangregg/FlameGraph.git
 ```
 
-3. Revise the path of Flamegraph in `constants.py`.
+2. Revise the path of Flamegraph in `constants.py`.
 
 ```
-FLAME_PATH = "/path/to/FlameGraph"   
+FLAME_PATH = "/path/to/FlameGraph" (should be /opt/FlameGraph if you used the above instructions)
 ```
 
 ### Install OFED Driver (Mellanox NIC) and Configure NICs
@@ -108,7 +122,7 @@ cd /path/to/driver/directory
 sudo ./mlnxofedinstall
 ```
 
-3. The NICs must be configured with certain addresses hardcoded in the kernel patch to enable deep profiling of the TCP connections. This allows us to augment the kernel code without affecting the performance of other TCP connections, and makes the measurements more accurate. Set the IP address of the sender to `192.168.10.114/24` and the IP address of the receiver to `192.168.10.115/24`. IP addresses can be set using the following command.
+3. **IMPORTANT** The NICs must be configured with certain addresses hardcoded in the kernel patch to enable deep profiling of the TCP connections. This allows us to augment the kernel code without affecting the performance of other TCP connections, and makes the measurements more accurate. Set the IP address of the sender to `192.168.10.114/24` and the IP address of the receiver to `192.168.10.115/24`. IP addresses can be set using the following command.
 
 ```
 sudo ifconfig <iface> <ip_addr>/<prefix_len>
@@ -116,19 +130,22 @@ sudo ifconfig <iface> <ip_addr>/<prefix_len>
 
 Here, `<iface>` is the network interface on which the experiments are to be run. Replace `<ip_addr>` and `<prefix_len>` by their appropriate values for the sender and receiver respectively.
 
-## 2. Getting the Mapping Between CPU and Receive Queues of NIC
+## Getting the Mapping Between CPU and Receive Queues of NIC
+
+**NOTE** You only need to follow these instructions if your CPU or NIC configuration is different from ours.
 
 The default RSS or RPS will forward packets to a receive queue of NIC or CPU based on the hash value of five tuples, leading performance fluctuation for different runs. Hence, in order to make the performance reproducible, we use flow steering to steer packets to a specific queue/CPU. The setup is done by `network_setup.py`. The only thing you need to do is to get the mapping between CPUs and receive queues. 
 
-The following instruction is for Mellanox NIC, which may be okay to extend for other NIC as well. We will use IRQ affinity to infer the mapping between the receive queues and the CPU cores. The assumption here is there is a one-to-one mapping between receive queue and IRQ as well.
+The following instructions are for Mellanox NIC, which may be okay to extend to other NICs as well. We will use IRQ affinity table to infer the mapping between the receive queues and the CPU cores. The assumption here is there is a one-to-one mapping between receive queue and IRQ as well.
 
 1. Reset IRQ mapping between CPU and IRQ to default and disable `irqbalance` as it dynamically changes the IRQ affinity causing unexpected performance deviations.
 
 ```
 sudo set_irq_affinity.sh <iface>
+sudo service irqbalance stop
 ```
 
-2. Show the IRQ affinity.
+2. Show the IRQ affinit table.
 
 ```
 sudo show_irq_affinity.sh <iface>
@@ -164,7 +181,7 @@ For example:
 176: 800000
 ```
 
-IRQ 152 can be ignored. The IRQs 153-176 map to receive queues 0-23 respectively. To interpret the line `N: xxxxxx`, N is the IRQ number, while `xxxxxx` is a bitmap for the cores the IRQ will be sent to. The number `xxxxxx` can be interpreted as follows.
+IRQ 152 can be ignored. The IRQs 153-176 map to receive queues 0-23 respectively (our system has 24 cores). To interpret the line `N: xxxxxx`, N is the IRQ number, while `xxxxxx` is a bitmap for the cores the IRQ will be sent to. The number `xxxxxx` can be interpreted as follows.
 
 ```
 Index starting
@@ -182,26 +199,21 @@ The index in the bitmap denotes the core ID. The number `x` denotes the NUMA nod
 3. Change `CPU_TO_RX_QUEUE_MAP` in the `constants.py`. This is the mapping from CPUs to their corresponding receive queues. For the example stated above, the mapping is
 
 ```
-CPU_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8 1 9 10 11 2 12 13 14 3 15 16 17 4 18 19 20 5 21 22 23".split()]
+CPU_TO_RX_QUEUE_MAP = [0, 6, 7, 8, 1, 9, 10, 11, 2, 12, 13, 14, 3, 15, 16, 17, 4, 18, 19, 20, 5, 21, 22, 23]
 ```
 
 Core 0 maps to queue 0 (IRQ 153), core 1 maps to queue 6 (IRQ 159).
 
-4. Change `NUMA_TO_RX_QUEUE_MAP` in the `constants.py`; it would be the first CPU node in each NUMA node; for example, if the server has 4 NUMA nodes and core 0 is in NUMA 0, core 1 is in NUMA 1, core 2 is in NUMA 2, core 3 is in NUMA 3, then
+## 3. Running an Experiment
 
-```
-NUMA_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8".split()]
-```
-
-## 3. Running the Experiment
-
-To run the experiment (eg. Single Flow case), 
+To run any experiment (eg. Single Flow case), 
 
 1. At the receiver, 
 
 ```
 sudo -s
-bash receiver/single-flow.sh <iface>
+cd ~/terabit-network-stack-profiling/scripts
+bash receiver/single-flow.sh <iface> <results_dir>
 ```
 
 `<iface>` is the interface name of the receiver's NIC.
@@ -210,26 +222,43 @@ bash receiver/single-flow.sh <iface>
 
 ```
 sudo -s
-bash sender/single-flow.sh <public_ip> <ip_iface> <iface>
+cd ~/terabit-network-stack-profiling/scripts
+bash sender/single-flow.sh <public_ip> <ip_iface> <iface> <results_dir>
 ```
 
 `<public_ip>` is an IP address for synchronization between sender and receiver for running the experiments; it's recommended that you use another (secondary) NIC for this purpose. Currently, we are using `SimpleXMLRPCServer` to control the synchronization. `<ip_iface>` is the IP of the receiver's NIC whose performance you'd like to evaluate. Both IP addresses (`<public_ip>` and `<ip_iface>`) are **receiver** addresses. `<iface>` is the NIC interface name on the sender side.
 
-3. The results can be found in `results/`; if you would like to get CPU profiling results organized by categories, you can look at `stdout` and log files. For example, in no optimization single flow case, `results/single-flow_no-opts.log` contains this info
+**NOTE** `<ip_iface>` must be `192.168.10.115`. See [section](#install-ofed-driver-mellanox-nic-and-configure-nics).
+
+3. The results can be found in `<results_dir>/`; if you would like to get CPU profiling results organized by categories, you can look at `stdout` and log files. For example, in no optimization single flow case, `<results_dir>/single-flow_no-opts.log` contains this info
 
 ```
 data_copy etc   lock  mm    netdev sched skb   tcp/ip
 4.590     9.650 4.980 7.030 16.090 4.880 7.060 37.210
 ```
 
-## 4. Artifact Evaluation
+## 4. SIGCOMM 2021 Artifact Evaluation
+
+### Hardware/Software Configuration
+
+We have used the follwing hardware and software configurations for running the experiments shown in the paper.
+
+* CPU: 4-Socket Intel Xeon Gold 6128 3.4 GHz with 6 Cores per Socket (with Hyperthreading Disabled)
+* RAM: 256 GB
+* NIC: Mellanox ConnectX-5 Ex VPI (100 Gbps)
+* OS: Ubuntu 16.04 with Linux 5.4.43 (patched)
+
+#### [Caveats of our work]
+
+Our work has been evaluated with two servers with 4-socket multi-core CPUs and 100Gbps NICs directly connected with a DAC cable. While we generally focus on trends rather than individual data points, other combinations of end-host network stacks and hardware may exhibit different performance characteristics. All our scripts use `network_setup.sh` to configure the NIC to allow a specific benchmark to be performed. Some of these configurations may be specific to Mellanox NICs (e.g., enabling aRFS).
+
+### Running Experiments
 
 All experiments must be run as `sudo`.
 
 ```
 sudo -s
-cd ~/terabit-network-stack-profiling
-mkdir results
+cd ~/terabit-network-stack-profiling/scripts
 ```
 
 - Figure 3(a)-3(d) (Single Flow):
