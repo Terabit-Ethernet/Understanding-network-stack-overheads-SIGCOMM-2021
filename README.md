@@ -111,7 +111,7 @@ Here, `<iface>` is the network interface on which the experiments are to be run.
 
 ## 2. Getting the Mapping Between CPU and Receive Queues of NIC
 
-The default RSS or RPS will forward packets to a receive queue of NIC or CPU based on the hash value of five tuples, leading performance fluctuation for different runs. Hence, in order to make the performance reproducible, we use flow steering to steer packets to a specific queue/CPU. The setup script is covered by `network_setup.py`. The only thing you need to do is to get the mapping between CPUs and receive queues. 
+The default RSS or RPS will forward packets to a receive queue of NIC or CPU based on the hash value of five tuples, leading performance fluctuation for different runs. Hence, in order to make the performance reproducible, we use flow steering to steer packets to a specific queue/CPU. The setup is done by `network_setup.py`. The only thing you need to do is to get the mapping between CPUs and receive queues. 
 
 The following instruction is for Mellanox NIC, which may be okay to extend for other NIC as well. We will use IRQ affinity to infer the mapping between the receive queues and the CPU cores. The assumption here is there is a one-to-one mapping between receive queue and IRQ as well.
 
@@ -170,7 +170,7 @@ ___x__ <- NUMA ID
 6    1
 ```
 
-The index in the bitmap denotes the core ID. The number `x` denotes the NUMA node of the core when interpreted as a bitmap. So the bitmap `002000` will be interpreted as 2nd NUMA (`2 = 0010`) and since it's at index 4 from the left, it's the 4th core. So this is the 4th core in 2nd NUMA node which is core 13. 
+The index in the bitmap denotes the core ID. The number `x` denotes the NUMA node of the core when interpreted as a bitmap. So the bitmap `004000` will be interpreted as 3nd NUMA (i.e NUMA 2 as `4 = 0100`) and since it's at index 4 from the left, it's the 4th core. So this is the 4th core in 3nd NUMA node which is core 14. 
 
 3. Change `CPU_TO_RX_QUEUE_MAP` in the `constants.py`. This is the mapping from CPUs to their corresponding receive queues. For the example stated above, the mapping is
 
@@ -178,9 +178,9 @@ The index in the bitmap denotes the core ID. The number `x` denotes the NUMA nod
 CPU_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8 1 9 10 11 2 12 13 14 3 15 16 17 4 18 19 20 5 21 22 23".split()]
 ```
 
-Core 0 maps to queue 0 (IRQ 153), Core 1 maps to queue 6 (IRQ 159).
+Core 0 maps to queue 0 (IRQ 153), core 1 maps to queue 6 (IRQ 159).
 
-4. Change `NUMA_TO_RX_QUEUE_MAP` in the `constants.py`; it would be the first CPU node in each NUMA node; for example, if the server has 4 NUMA nodes and Core 0 is in NUMA node 0, Core 1 is in NUMA node 1, Core 2 is in NUMA noded 2, Core 3 is in NUMA node 3, then
+4. Change `NUMA_TO_RX_QUEUE_MAP` in the `constants.py`; it would be the first CPU node in each NUMA node; for example, if the server has 4 NUMA nodes and core 0 is in NUMA 0, core 1 is in NUMA 1, core 2 is in NUMA 2, core 3 is in NUMA 3, then
 
 ```
 NUMA_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8".split()]
@@ -190,25 +190,25 @@ NUMA_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8".split()]
 
 To run the experiment (eg. Single Flow case), 
 
-1. At the receiver side, 
+1. At the receiver, 
 
 ```
 sudo -s
-sh receiver/single-flow.sh <iface>
+bash -x receiver/single-flow.sh <iface>
 ```
 
 `<iface>` is the interface name of the receiver's NIC.
 
-2. At the sender side,
+2. At the sender,
 
 ```
 sudo -s
-sh sender/single-flow.sh <public_ip> <ip of iface> <iface>
+bash -x sender/single-flow.sh <public_ip> <ip_iface> <iface>
 ```
 
-`<public_ip>` is for synchronizing between sender and receiver for running the experiments; currently, we are using `SimpleXMLRPCServer` to control the synchronization. `<ip of iface>` is the dst interface's IP, which you'd like to evaluate the performance. Both IP addresses (`<public ip>` and `<ip of iface>`) are **receiver** addresses. `<iface>` is the NIC name in the sender side.
+`<public_ip>` is an IP address for synchronization between sender and receiver for running the experiments; it's recommended that you use another (secondary) NIC for this purpose. Currently, we are using `SimpleXMLRPCServer` to control the synchronization. `<ip_iface>` is the IP of the receiver's NIC whose performance you'd like to evaluate. Both IP addresses (`<public_ip>` and `<ip_iface>`) are **receiver** addresses. `<iface>` is the NIC interface name on the sender side.
 
-3. The results can be found in `results/`; if you would like to get CPU profiling results organized by categories, you can look at log file. For example, in no optimization single flow case, `results/single-flow_no-opts.log` contained this info
+3. The results can be found in `results/`; if you would like to get CPU profiling results organized by categories, you can look at `stdout` and log files. For example, in no optimization single flow case, `results/single-flow_no-opts.log` contins this info
 
 ```
 data_copy etc   lock  mm    netdev sched skb   tcp/ip
