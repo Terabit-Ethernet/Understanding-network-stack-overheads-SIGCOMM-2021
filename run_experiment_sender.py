@@ -107,7 +107,7 @@ def parse_args():
         else:
             args.cpus = list(range(args.num_connections))
 
-    if args.arfs and len(args.affinity) > 0:
+    if args.arfs and args.affinity is not None:
         print("Can't set --affinity with --arfs.")
         exit(0)
 
@@ -122,6 +122,8 @@ def parse_args():
             args.affinity = [cpu + 1 for cpu in args.cpus]
         elif args.config == "all-to-all":
             args.affinity = list(range(MAX_CPUS))
+    else:
+        args.affinity = []
 
     # Create the directory for writing raw outputs
     if args.output is not None:

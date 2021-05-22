@@ -111,6 +111,8 @@ def parse_args():
             args.affinity = [cpu + 1 for cpu in args.cpus]
         elif args.config == "all-to-all":
             args.affinity = list(range(MAX_CPUS))
+    else:
+        args.affinity = []
 
     # Create the directory for writing raw outputs
     if args.output is not None:
