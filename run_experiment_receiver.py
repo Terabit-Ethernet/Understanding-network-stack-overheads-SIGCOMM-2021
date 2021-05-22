@@ -80,7 +80,7 @@ def parse_args():
         exit(1)
 
     # Set CPUs to be used
-    if len(args.cpus) != 0:
+    if args.cpus is not None:
         if args.config in ["single", "incast"] and len(args.cpus) != 1:
             print("Please provide only 1 --cpus for --config incast/single.")
             exit(1)
@@ -96,12 +96,12 @@ def parse_args():
         else:
             args.cpus = list(range(args.num_connections))
 
-    if args.args and len(args.affinity) > 0:
+    if args.arfs and args.affinity is not None:
         print("Can't set --affinity with --arfs.")
         exit(0)
 
     # Set IRQ processing CPUs
-    if len(args.affinity) != 0 and not all(map(lambda c: 0 <= c < MAX_CPUS, args.affinity)):
+    if args.affinity is not None and not all(map(lambda c: 0 <= c < MAX_CPUS, args.affinity)):
         print("Can't set --cpus outside of [0, {}].".format(MAX_CPUS))
         exit(1)
     elif not args.arfs:
@@ -195,7 +195,7 @@ def run_netperf(cpu, port, window=None):
 
 
 def run_flows(flow_type, config, num_connections, num_rpcs, cpus, window):
-    elif flow_type in ["long", "mixed"]:
+    if flow_type in ["long", "mixed"]:
         flow_func = run_iperf
     elif flow_type == "short":
         flow_func = run_netperf
@@ -281,6 +281,9 @@ def set_packet_drop_rate(rate):
 if __name__ == "__main__":
     # Parse args
     args = parse_args()
+
+    print(args)
+    exit(0)
 
     # Start the XMLRPC server thread
     server_thread.start()

@@ -90,8 +90,8 @@ def parse_args():
         print("Please provide --output if using --flame.")
         exit(1)
 
-       # Set CPUs to be used
-    if len(args.cpus) != 0:
+    # Set CPUs to be used
+    if args.cpus is not None:
         if args.config in ["single", "outcast"] and len(args.cpus) != 1:
             print("Please provide only 1 --cpus for --config outcast/single.")
             exit(1)
@@ -107,12 +107,12 @@ def parse_args():
         else:
             args.cpus = list(range(args.num_connections))
 
-    if args.args and len(args.affinity) > 0:
+    if args.arfs and len(args.affinity) > 0:
         print("Can't set --affinity with --arfs.")
         exit(0)
 
     # Set IRQ processing CPUs
-    if len(args.affinity) != 0 and not all(map(lambda c: 0 <= c < MAX_CPUS, args.affinity)):
+    if args.affinity is not None and not all(map(lambda c: 0 <= c < MAX_CPUS, args.affinity)):
         print("Can't set --cpus outside of [0, {}].".format(MAX_CPUS))
         exit(1)
     elif not args.arfs:
@@ -154,7 +154,7 @@ def run_netperf(cpu, addr, port, duration, _, rpc_size):
 
 
 def run_flows(flow_type, config, addr, num_connections, num_rpcs, cpus, duration, window, rpc_size):
-    elif flow_type in ["long", "mixed"]:
+    if flow_type in ["long", "mixed"]:
         flow_func = run_iperf
     elif flow_type == "short":
         flow_func = run_netperf
