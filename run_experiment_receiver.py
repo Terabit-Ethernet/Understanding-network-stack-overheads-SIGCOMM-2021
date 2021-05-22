@@ -195,7 +195,7 @@ def run_netperf(cpu, port, window=None):
 
 
 def run_flows(flow_type, config, num_connections, num_rpcs, cpus, window):
-    elif flow_type in ["long", "mixed"]:
+    if flow_type in ["long", "mixed"]:
         flow_func = run_iperf
     elif flow_type == "short":
         flow_func = run_netperf
