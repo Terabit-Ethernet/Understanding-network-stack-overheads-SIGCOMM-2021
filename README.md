@@ -208,7 +208,7 @@ bash -x sender/single-flow.sh <public_ip> <ip_iface> <iface>
 
 `<public_ip>` is an IP address for synchronization between sender and receiver for running the experiments; it's recommended that you use another (secondary) NIC for this purpose. Currently, we are using `SimpleXMLRPCServer` to control the synchronization. `<ip_iface>` is the IP of the receiver's NIC whose performance you'd like to evaluate. Both IP addresses (`<public_ip>` and `<ip_iface>`) are **receiver** addresses. `<iface>` is the NIC interface name on the sender side.
 
-3. The results can be found in `results/`; if you would like to get CPU profiling results organized by categories, you can look at `stdout` and log files. For example, in no optimization single flow case, `results/single-flow_no-opts.log` contins this info
+3. The results can be found in `results/`; if you would like to get CPU profiling results organized by categories, you can look at `stdout` and log files. For example, in no optimization single flow case, `results/single-flow_no-opts.log` contains this info
 
 ```
 data_copy etc   lock  mm    netdev sched skb   tcp/ip
