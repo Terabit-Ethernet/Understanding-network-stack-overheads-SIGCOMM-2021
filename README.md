@@ -90,7 +90,7 @@ sudo update-grub && reboot
 
 8. When system is rebooted, check the kernel version, type `uname -r` in the command-line. It should be `5.4.43-sigcomm21`.
 
-### Install Perf
+### Install perf
 
 1. To install `perf` from the kernel source directory, first install the build dependencies.
 
@@ -265,9 +265,9 @@ We have used the follwing hardware and software configurations for running the e
 * NIC: Mellanox ConnectX-5 Ex VPI (100 Gbps)
 * OS: Ubuntu 16.04 with Linux 5.4.43 (patched)
 
-#### [Caveats of our work]
+#### Caveats of Our Work
 
-Our work has been evaluated with two servers with 4-socket multi-core CPUs and 100Gbps NICs directly connected with a DAC cable. While we generally focus on trends rather than individual data points, other combinations of end-host network stacks and hardware may exhibit different performance characteristics. All our scripts use `network_setup.sh` to configure the NIC to allow a specific benchmark to be performed. Some of these configurations may be specific to Mellanox NICs (e.g., enabling aRFS).
+Our work has been evaluated with two servers with 4-socket multi-core CPUs and 100 Gbps NICs directly connected with a DAC cable. While we generally focus on trends rather than individual data points, other combinations of end-host network stacks and hardware may exhibit different performance characteristics. All our scripts use `network_setup.sh` to configure the NIC to allow a specific benchmark to be performed. Some of these configurations may be specific to Mellanox NICs (e.g., enabling aRFS).
 
 ### Running Experiments
 
@@ -284,45 +284,45 @@ sudo -s
 cd ~/terabit-network-stack-profiling/scripts
 ```
 
-- Figure 3(a)-3(d) (Single Flow):
-   - Sender: `bash ./sender/single-flow.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash ./receiver/single-flow.sh enp37s0f1`
+- Figure 3(a)-3(d) (Single Flow) (~7 minutes)
+   - Sender: `bash sender/single-flow.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash receiver/single-flow.sh enp37s0f1`
 
-- Figure 3(e)-3(f) (Single Flow):
-   - Sender: `bash ./sender/tcp-buffer.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash ./receiver/tcp-buffer.sh enp37s0f1`
+- Figure 3(e)-3(f) (Single Flow) (~11 minutes)
+   - Sender: `bash sender/tcp-buffer.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash receiver/tcp-buffer.sh enp37s0f1`
 
-- Figure 4(a)-4(b) (One-to-One):
-   - Sender: `bash ./sender/one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash ./receiver/one-to-one.sh enp37s0f1`
+- Figure 4(a)-4(b) (One-to-One) (~9 minutes)
+   - Sender: `bash sender/one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash receiver/one-to-one.sh enp37s0f1`
 
-- Figure 5 (Incast):
-   - Sender: `bash ./sender/incast.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash ./receiver/incast.sh enp37s0f1`
+- Figure 5 (Incast) (~10 minutes)
+   - Sender: `bash sender/incast.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash receiver/incast.sh enp37s0f1`
 
-- Figure 6 (All-to-All):
-   - Sender: `bash ./sender/all-to-all.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash ./receiver/all-to-all.sh enp37s0f1`
+- Figure 6 (All-to-All) (~10 minutes)
+   - Sender: `bash sender/all-to-all.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash receiver/all-to-all.sh enp37s0f1`
 
-- Figure 7 (Packet Drop):
-   - Sender: `bash ./sender/packet-loss.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash ./receiver/packet-loss.sh enp37s0f1`
+- Figure 7 (Packet Drop) (~9 minutes)
+   - Sender: `bash sender/packet-loss.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash receiver/packet-loss.sh enp37s0f1`
 
-- Figure 8(a)-8(b) (Short Flow Incast):
-   - Sender: `bash ./sender/short-incast.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash ./receiver/short-incast.sh enp37s0f1`
+- Figure 8(a)-8(b) (Short Flow Incast) (~12 minutes)
+   - Sender: `bash sender/short-incast.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash receiver/short-incast.sh enp37s0f1`
 
-- Figure 9 (Mixed Flow):
-   - Sender: `bash ./sender/mixed.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash ./receiver/mixed.sh enp37s0f1`
+- Figure 9 (Mixed Flow) (~9 minutes)
+   - Sender: `bash sender/mixed.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash receiver/mixed.sh enp37s0f1`
 
-- Figure 4(c) and 8(c) (Local vs Remote NUMA):
-   - Sender: `bash ./sender/numa.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash ./receiver/numa.sh enp37s0f1`
+- Figure 4(c) and 8(c) (Local vs Remote NUMA) (~4 minutes)
+   - Sender: `bash sender/numa.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash receiver/numa.sh enp37s0f1`
 
-- Outcast:
-   - Sender: `bash ./sender/outcast.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash ./receiver/outcast.sh enp37s0f1`
+- Outcast (~9 minutes)
+   - Sender: `bash sender/outcast.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash receiver/outcast.sh enp37s0f1`
 
 ## Authors
 
