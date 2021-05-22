@@ -262,8 +262,8 @@ mkdir results
    - Receiver: `bash -x ./receiver/numa.sh enp37s0f1`
 
 - Outcast:
-   - Sender: ` sh ./sender/one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: ` sh ./receiver/one-to-one.sh enp37s0f1`
+   - Sender: ` sh ./sender/outcast.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: ` sh ./receiver/outcast.sh enp37s0f1`
 
 ## Authors
 
