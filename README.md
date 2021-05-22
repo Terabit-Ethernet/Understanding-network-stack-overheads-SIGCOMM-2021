@@ -1,8 +1,8 @@
 # Understanding Network Stack Performance for Terabit Ethernet Networks
 
-## Overview
+### Overview
 
-We provide here the scripts that can be used to profile the Linux kernel TCP stack running over terabit ethernet networks. [Section 1](#organisation) describes the organisation of the repository. [section 2](#setup-servers) contains the steps required to setup the servers to perform profiling. This involves patching and installing an appproriate kernel, installing additional tools like `perf`, and configuring the NIC which one would like to use for the profiling. [Section 3](#running-an-experiment) gives a general overview of how to use our evaluation scripts. And finally, in [section 4](#sigcomm-2021-artefact-evaluation) you will find the necessary instructions to reproduce the results from our SIGCOMM 2021 paper.
+We provide here the scripts that can be used to profile the Linux kernel TCP stack running over terabit ethernet networks. [Section 1](#organisation) describes the organisation of the repository. [Section 2](#setup-servers) contains the steps required to setup the servers to perform profiling. This involves patching and installing an appproriate kernel, installing additional tools like `perf`, and configuring the NIC which one would like to use for the profiling. [Section 3](#running-an-experiment) gives a general overview of how to use our evaluation scripts. And finally, in [Section 4](#sigcomm-2021-artifact-evaluation) you will find the necessary instructions to reproduce the results from our SIGCOMM 2021 paper.
 
 ## Organisation
 
@@ -235,7 +235,7 @@ bash sender/single-flow.sh <public_ip> <ip_iface> <iface> <results_dir>
 
 `<public_ip>` is an IP address for synchronization between sender and receiver for running the experiments; it's recommended that you use another (secondary) NIC for this purpose. Currently, we are using `SimpleXMLRPCServer` to control the synchronization. `<ip_iface>` is the IP of the receiver's NIC whose performance you'd like to evaluate. Both IP addresses (`<public_ip>` and `<ip_iface>`) are **receiver** addresses. `<iface>` is the NIC interface name on the sender side.
 
-**NOTE** `<ip_iface>` must be `192.168.10.115`. See [section](#install-ofed-driver-mellanox-nic-and-configure-nics).
+**NOTE** `<ip_iface>` must be `192.168.10.115`. See [Section 2.4](#install-ofed-driver-mellanox-nic-and-configure-nics).
 
 3. The results can be found in `<results_dir>/`; if you would like to get CPU profiling results organized by categories, you can look at `stdout` and log files. For example, in no optimization single flow case, `<results_dir>/single-flow_no-opts.log` contains this info
 
