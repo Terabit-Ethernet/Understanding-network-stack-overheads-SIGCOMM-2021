@@ -25,7 +25,7 @@ The given kernel patch includes the following features.
 * We introduce a patch to measure scheduling/data copy latency, by timestamping of each `skb` shortly after it's created and logging the delta between it and right before data copy is performed.
 * We also patch the kernel to capture a histogram of `skb` sizes after GRO (Generic Segmentation Offload) and log them.
 
-Our patch is based on Linux 5.4.43.
+Our patch is based on Linux 5.4.43. Use the following instructions to build and install the kernel.
 
 1. Download Linux kernel source tree.
 
@@ -48,6 +48,7 @@ git apply ../terabit-network-stack-profiling/kernel_patch/profiling.patch
 ```
 cp /boot/config-x.x.x .config
 make oldconfig
+scripts/config --disable DEBUG_INFO # Disables building debugging related files
 ```
 
 `x.x.x` is a kernel version. It can be your current kernel version or latest version your system has. Type  `uname -r` to see your current kernel version.  
@@ -78,7 +79,9 @@ sudo update-grub && reboot
 1. To install `perf` from the kernel source directory, first install the build dependencies.
 
 ```
-sudo apt install -y systemtap-sdt-dev libaudit-common libaudit-dev libaudit1 libssl-dev libiberty-dev binutils-dev zlib1g zlib1g-dev libzstd1-dev liblzma-dev libcap-dev libnuma-dev libbabeltrace-ctf-dev libbabeltrace-dev
+sudo apt install -y systemtap-sdt-dev libaudit-common libaudit-dev libaudit1 libssl-dev   \
+                    libiberty-dev binutils-dev zlib1g zlib1g-dev libzstd1-dev liblzma-dev \
+                    libcap-dev libnuma-dev libbabeltrace-ctf-dev libbabeltrace-dev
 ```
 
 2. Build and install `perf`.
@@ -88,10 +91,10 @@ cd ~/linux-5.4.43/tools
 sudo make perf_install prefix=/usr/
 ```
 
-3. Revise the path of `perf` in `constants.py`.
+3. Revise the path of `perf` in `constants.py`; should be `/usr/bin/perf` if you used the above instructions.
 
 ```
-PERF_PATH = "/path/to/perf" (should be /usr/bin/perf if you used the above instructions)
+PERF_PATH = "/path/to/perf"
 ```
 
 ### Install Flamegraph (Optional)
@@ -103,10 +106,10 @@ cd /opt/
 sudo git clone https://github.com/brendangregg/FlameGraph.git
 ```
 
-2. Revise the path of Flamegraph in `constants.py`.
+2. Revise the path of Flamegraph in `constants.py`; should be `/opt/FlameGraph` if you used the above instructions.
 
 ```
-FLAME_PATH = "/path/to/FlameGraph" (should be /opt/FlameGraph if you used the above instructions)
+FLAME_PATH = "/path/to/FlameGraph"
 ```
 
 ### Install OFED Driver (Mellanox NIC) and Configure NICs
