@@ -246,8 +246,8 @@ mkdir results
    - Receiver: `bash -x ./receiver/all-to-all.sh enp37s0f1`
 
 - Figure 7 (Packet Drop):
-   - Sender: `bash -x ./sender/packet-drop.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash -x ./receiver/packet-drop.sh enp37s0f1`
+   - Sender: `bash -x ./sender/packet-loss.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash -x ./receiver/packet-loss.sh enp37s0f1`
 
 - Figure 8(a)-8(b) (Short Flow Incast):
    - Sender: `bash -x ./sender/short-incast.sh 128.84.155.115 192.168.10.115 enp37s0f1`
