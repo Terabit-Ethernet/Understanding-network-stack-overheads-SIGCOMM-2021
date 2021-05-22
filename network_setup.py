@@ -7,9 +7,15 @@ from constants import *
 
 # For debugging
 class os:
+    VERBOSE = False
+
     @staticmethod
-    def system(p, log=True):
-        if log: print("+ " + p)
+    def enable_logging():
+        os.VERBOSE = True
+
+    @staticmethod
+    def system(p):
+        if os.VERBOSE: print("+ " + p)
         _os.system(p)
 
 
@@ -45,6 +51,9 @@ def parse_args():
     # Parse IRQ/aRFS parameters
     parser.add_argument('--arfs', action='store_true', default=None, help='Enables aRFS.')
     parser.add_argument('--no-arfs', dest='arfs', action='store_false', default=None, help='Disables aRFS.')
+
+    # Logging parameters
+    parser.add_argument("--verbose", action="store_true", help="Print extra output.")
 
     # Actually parse arguments
     args = parser.parse_args()
@@ -124,7 +133,7 @@ def ntuple_send_all_traffic_to_queue(iface, n, loc):
 
 def ntuple_clear_rules(iface):
     for i in range(MAX_RULE_LOC + 1):
-        os.system("ethtool -U {} delete {} 2> /dev/null > /dev/null".format(iface, i), False)
+        os.system("ethtool -U {} delete {} 2> /dev/null > /dev/null".format(iface, i))
 
 
 # Functions to set IRQ mode
@@ -233,6 +242,8 @@ def set_ddio_ways(ways):
 # Run the functions according to parsed arguments
 if __name__ == "__main__":
     args = parse_args()
+    if args.verbose:
+        os.enable_logging()
 
     # Set offload config
     manage_offloads(args.interface, args.lro, args.tso, args.gso, args.gro, args.checksum)

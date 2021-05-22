@@ -18,15 +18,15 @@ class subprocess:
     PIPE = _sp.PIPE
     DEVNULL = _sp.DEVNULL
     STDOUT = _sp.STDOUT
-    QUIET = False
+    VERBOSE = False
 
     @staticmethod
-    def quiet():
-        subprocess.QUIET = True
+    def enable_logging():
+        os.VERBOSE = True
 
     @staticmethod
     def Popen(*args, **kwargs):
-        if not subprocess.QUIET: print("+ " + " ".join(shlex.quote(s) for s in args[0]))
+        if subprocess.VERBOSE: print("+ " + " ".join(shlex.quote(s) for s in args[0]))
         return _sp.Popen(*args, **kwargs)
 
 
@@ -55,7 +55,7 @@ def parse_args():
     parser.add_argument("--flame", action="store_true", help="Create a flame graph from the experiment.")
     parser.add_argument("--latency", action="store_true", help="Calculate the average data copy latency for each packet.")
     parser.add_argument("--skb-hist", action="store_true", help="Record the skb sizes histogram.")
-    parser.add_argument("--verbose", dest="quiet", action="store_false", help="Print extra output.")
+    parser.add_argument("--verbose", action="store_true", help="Print extra output.")
 
     # Parse and verify arguments
     args = parser.parse_args()
@@ -227,8 +227,8 @@ def run_sar(cpus):
 if __name__ == "__main__":
     # Parse args
     args = parse_args()
-    if args.quiet:
-        subprocess.quiet()
+    if args.verbose:
+        subprocess.enable_logging()
 
     # Create the XMLRPC proxy
     receiver = xmlrpc.client.ServerProxy("http://{}:{}".format(args.receiver, COMM_PORT), allow_none=True)
@@ -416,7 +416,7 @@ if __name__ == "__main__":
 
         # Print the output
         print("[util breakdown] total throughput: {:.3f}\ttotal contribution: {:.3f}\tunaccounted contribution: {:.3f}".format(throughput, total_contrib, unaccounted_contrib))
-        if unaccounted_contrib > 5 and not args.quiet:
+        if unaccounted_contrib > 5 and args.verbose:
             print("[util breakdown] unknown symbols: {}".format(", ".join(not_found)))
 
     if args.cache_breakdown:
@@ -470,7 +470,7 @@ if __name__ == "__main__":
 
         # Print the output
         print("[cache breakdown] total throughput: {:.3f}\ttotal contribution: {:.3f}\tunaccounted contribution: {:.3f}".format(throughput, total_contrib, unaccounted_contrib))
-        if unaccounted_contrib > 5 and not args.quiet:
+        if unaccounted_contrib > 5 and not args.verbose:
             print("[cache breakdown] unknown symbols: {}".format(", ".join(not_found)))
 
     if args.flame:

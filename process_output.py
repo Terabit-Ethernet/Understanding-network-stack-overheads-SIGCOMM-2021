@@ -116,9 +116,12 @@ def process_latency_output(lines):
         except:
             pass
 
-    # Sort to allow tail to be found
+    # Sort and get average and tail
     samples.sort()
-    return sum(samples) / len(samples), samples[round(0.99 * len(samples) + 0.5)]
+    avg_latency = (sum(samples) / len(samples)) / 1000
+    tail_latency = samples[round(0.99 * len(samples) + 0.5)] / 1000
+
+    return avg_latency, tail_latency
 
 
 def process_skb_sizes_output(lines):
