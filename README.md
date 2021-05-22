@@ -299,8 +299,8 @@ cd ~/terabit-network-stack-profiling/scripts
    - Receiver: `bash ./receiver/numa.sh enp37s0f1`
 
 - Outcast:
-   - Sender: ` sh ./sender/outcast.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: ` sh ./receiver/outcast.sh enp37s0f1`
+   - Sender: `bash ./sender/outcast.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash ./receiver/outcast.sh enp37s0f1`
 
 ## Authors
 
