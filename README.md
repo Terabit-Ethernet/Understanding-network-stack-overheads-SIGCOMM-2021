@@ -1,8 +1,15 @@
-# terabit-network-stack-profiling: Understanding Network Stack performance for High Speed Networks
+# Understanding Network Stack performance for Terabit Ethernet Networks
 
-## 1. Install Tools and Patch Kernel for Profiling
+## 1. Install Tools and Patch Kernel
 
-### Patch Linux kernel for enabling deep profiling
+### Patch Linux Kernel to Enable Deep Profiling
+
+The given kernel patch includes the following features.
+
+* By default, the kernel forcibly enables GSO (Generic Segmentation Offload) even when explicity disabled. This would not let us compare the performance of TSO to the baseline, so we patch the kernel to allow us to truly disable GSO.
+* Since we want to test the performace of the TCP stack in presence of packet loss, we introduce a `sysctl` parameter `net.core.packet_loss_gen` which, when enabled, drops packets in the lower layers of packet processing.
+* We introduce a patch to measure scheduling latency, by timestamping of each `skb` shortly after it's created and logging the delta between then and right before data copy is performed.
+* We also patch the kernel to capture a histogram of `skb` size after GRO (Generic Segmentation Offload) and log them.
 
 We have tested our setup on Ubuntu 16.04 LTS with kernel 5.4.43. Building the kernel and installing the tools should be done on both servers.
 
@@ -14,7 +21,7 @@ wget https://mirrors.edge.kernel.org/pub/linux/kernel/v5.x/linux-5.4.43.tar.gz
 tar xzvf linux-5.4.43.tar.gz
 ```
 
-2. Download and apply the path to the kernel source.
+2. Download and apply the patch to the kernel source.
 
 ```
 git clone https://github.com/WarpSpeed-Networking/terabit-network-stack-profiling
@@ -54,7 +61,7 @@ sudo update-grub && reboot
 
 9. When systems are rebooted, check the kernel version, type `uname -r` in the command-line. It should be `5.4.43-sigcomm21`.
 
-### Perf
+### Install Perf
 
 1. To install `perf` from the kernel source directory, first install the build dependencies.
 
@@ -75,7 +82,7 @@ sudo make perf_install prefix=/usr/
 PERF_PATH = "/path/to/perf"
 ```
 
-### Flamegraph (Optional)
+### Install Flamegraph (Optional)
 
 1. Clone the Flamegraph tool. This tool is useful for understanding/visualizing the data path of the kernel.
 
@@ -186,7 +193,7 @@ Core 0 maps to queue 0 (IRQ 153), core 1 maps to queue 6 (IRQ 159).
 NUMA_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8".split()]
 ```
 
-## 3. Running the experiment
+## 3. Running the Experiment
 
 To run the experiment (eg. Single Flow case), 
 
@@ -194,7 +201,7 @@ To run the experiment (eg. Single Flow case),
 
 ```
 sudo -s
-bash -x receiver/single-flow.sh <iface>
+bash receiver/single-flow.sh <iface>
 ```
 
 `<iface>` is the interface name of the receiver's NIC.
@@ -203,7 +210,7 @@ bash -x receiver/single-flow.sh <iface>
 
 ```
 sudo -s
-bash -x sender/single-flow.sh <public_ip> <ip_iface> <iface>
+bash sender/single-flow.sh <public_ip> <ip_iface> <iface>
 ```
 
 `<public_ip>` is an IP address for synchronization between sender and receiver for running the experiments; it's recommended that you use another (secondary) NIC for this purpose. Currently, we are using `SimpleXMLRPCServer` to control the synchronization. `<ip_iface>` is the IP of the receiver's NIC whose performance you'd like to evaluate. Both IP addresses (`<public_ip>` and `<ip_iface>`) are **receiver** addresses. `<iface>` is the NIC interface name on the sender side.
@@ -226,40 +233,40 @@ mkdir results
 ```
 
 - Figure 3(a)-3(d) (Single Flow):
-   - Sender: `bash -x ./sender/single-flow.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash -x ./receiver/single-flow.sh enp37s0f1`
+   - Sender: `bash ./sender/single-flow.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash ./receiver/single-flow.sh enp37s0f1`
 
 - Figure 3(e)-3(f) (Single Flow):
-   - Sender: `bash -x ./sender/tcp-buffer.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash -x ./receiver/tcp-buffer.sh enp37s0f1`
+   - Sender: `bash ./sender/tcp-buffer.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash ./receiver/tcp-buffer.sh enp37s0f1`
 
 - Figure 4(a)-4(b) (One-to-One):
-   - Sender: `bash -x ./sender/one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash -x ./receiver/one-to-one.sh enp37s0f1`
+   - Sender: `bash ./sender/one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash ./receiver/one-to-one.sh enp37s0f1`
 
 - Figure 5 (Incast):
-   - Sender: `bash -x ./sender/incast.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash -x ./receiver/incast.sh enp37s0f1`
+   - Sender: `bash ./sender/incast.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash ./receiver/incast.sh enp37s0f1`
 
 - Figure 6 (All-to-All):
-   - Sender: `bash -x ./sender/all-to-all.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash -x ./receiver/all-to-all.sh enp37s0f1`
+   - Sender: `bash ./sender/all-to-all.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash ./receiver/all-to-all.sh enp37s0f1`
 
 - Figure 7 (Packet Drop):
-   - Sender: `bash -x ./sender/packet-loss.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash -x ./receiver/packet-loss.sh enp37s0f1`
+   - Sender: `bash ./sender/packet-loss.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash ./receiver/packet-loss.sh enp37s0f1`
 
 - Figure 8(a)-8(b) (Short Flow Incast):
-   - Sender: `bash -x ./sender/short-incast.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash -x ./receiver/short-incast.sh enp37s0f1`
+   - Sender: `bash ./sender/short-incast.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash ./receiver/short-incast.sh enp37s0f1`
 
 - Figure 9 (Mixed Flow):
-   - Sender: `bash -x ./sender/mixed.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash -x ./receiver/mixed.sh enp37s0f1`
+   - Sender: `bash ./sender/mixed.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash ./receiver/mixed.sh enp37s0f1`
 
 - Figure 4(c) and 8(c) (Local vs Remote NUMA):
-   - Sender: `bash -x ./sender/numa.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash -x ./receiver/numa.sh enp37s0f1`
+   - Sender: `bash ./sender/numa.sh 128.84.155.115 192.168.10.115 enp37s0f1`
+   - Receiver: `bash ./receiver/numa.sh enp37s0f1`
 
 - Outcast:
    - Sender: ` sh ./sender/outcast.sh 128.84.155.115 192.168.10.115 enp37s0f1`
