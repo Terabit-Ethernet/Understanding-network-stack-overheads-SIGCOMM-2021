@@ -22,7 +22,17 @@ Below you will find instructions on how to use the tools provided in this reposi
 
 ## Setup Servers
 
-### Patch Linux Kernel to Enable Deep Profiling
+### Install Prerequisites
+
+We need to install prerequisites to compile the kernel, and other benchmarking utilities. On Ubuntu 16.04, this can be done with
+
+```
+sudo apt-get install libncurses-dev gawk flex bison openssl libssl-dev dkms   \
+                     libelf-dev libudev-dev libpci-dev libiberty-dev autoconf \
+                     iperf netperf sysstat
+```
+
+### Patch Linux Kernel to Enable Deep Profiling (~30 minutes)
 
 The given kernel patch includes the following features.
 
@@ -235,7 +245,7 @@ bash sender/single-flow.sh <public_ip> <ip_iface> <iface> <results_dir>
 
 `<public_ip>` is an IP address for synchronization between sender and receiver for running the experiments; it's recommended that you use another (secondary) NIC for this purpose. Currently, we are using `SimpleXMLRPCServer` to control the synchronization. `<ip_iface>` is the IP of the receiver's NIC whose performance you'd like to evaluate. Both IP addresses (`<public_ip>` and `<ip_iface>`) are **receiver** addresses. `<iface>` is the NIC interface name on the sender side.
 
-**NOTE** `<ip_iface>` must be `192.168.10.115`. See [Section 2.4](#install-ofed-driver-mellanox-nic-and-configure-nics).
+**NOTE** `<ip_iface>` must be `192.168.10.115`. See [Section 2.5](#install-ofed-driver-mellanox-nic-and-configure-nics).
 
 3. The results can be found in `<results_dir>/`; if you would like to get CPU profiling results organized by categories, you can look at `stdout` and log files. For example, in no optimization single flow case, `<results_dir>/single-flow_no-opts.log` contains this info
 
@@ -261,7 +271,13 @@ Our work has been evaluated with two servers with 4-socket multi-core CPUs and 1
 
 ### Running Experiments
 
-All experiments must be run as `sudo`.
+Setup the two servers as sender and receiver respectively as outlined in [Section 2](#setup-servers). This section assumes that
+
+* there is another secondary connection between the two serves through a **separate** NIC and receiver can be reached at the IP address `128.84.155.115` through that interface;
+* the IP address of the NIC to be profiled is set to be `192.168.10.114` for the sender, and `192.168.10.115` for the receiver, in accordance with [Section 2.5](#install-ofed-driver-mellanox-nic-and-configure-nics);
+* and that the name of the interface of the NIC to be profiled is `enp37s0f1`.
+
+Please make sure you change the command-lines below to reflect any differences between your setup and the assumptions. All experiments must be run as `sudo`.
 
 ```
 sudo -s
