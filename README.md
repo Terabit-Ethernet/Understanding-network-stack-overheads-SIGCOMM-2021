@@ -38,7 +38,7 @@ make -j`nproc` LOCALVERSION=-sigcomm21 bindeb-pkg
 sudo dpkg -i ../linux-headers-5.4.43-sigcomm21_5.4.43-sigcomm21-1_amd64.deb ../linux-image-5.4.43-sigcomm21_5.4.43-sigcomm21-1_amd64.deb
 ```
 
-6. Edit `/etc/default/grub` to boot with your new kernel by default. For example:
+6. Edit `/etc/default/grub` to boot with your new kernel by default. For example
 
 ```
 GRUB_DEFAULT="1>Ubuntu, with Linux 5.4.43-sigcomm21"
@@ -77,7 +77,7 @@ PERF_PATH = "/path/to/perf"
 
 ### Flamegraph (Optional)
 
-1. Git clone the Flamegraph tool. This tool is useful for understanding/visualizing the data path of the kernel.
+1. Clone the Flamegraph tool. This tool is useful for understanding/visualizing the data path of the kernel.
 
 ```
 cd ~
@@ -90,36 +90,44 @@ sudo git clone https://github.com/brendangregg/FlameGraph.git
 FLAME_PATH = "/path/to/FlameGraph"   
 ```
 
-### Install OFED Driver (Mellanox NIC) 
+### Install OFED Driver (Mellanox NIC) and Configure NICs
 
 1. Download the OFED drier from the Mellanox website: [https://www.mellanox.com/products/infiniband-drivers/linux/mlnx_ofed](https://www.mellanox.com/products/infiniband-drivers/linux/mlnx_ofed).
 
-2. Untar and install:
+2. Extract the installation file and install.
 
 ```
 cd /path/to/driver/directory
 sudo ./mlnxofedinstall
 ```
 
+3. The NICs must be configured with certain addresses hardcoded in the kernel patch to enable deep profiling of the TCP connections. This allows us to augment the kernel code without affecting the performance of other TCP connections, and makes the measurements more accurate. Set the IP address of the sender to `192.168.10.114/24` and the IP address of the receiver to `192.168.10.115/24`. IP addresses can be set using the following command.
+
+```
+sudo ifconfig <iface> <ip_addr>/<prefix_len>
+```
+
+Here, `<iface>` is the network interface on which the experiments are to be run. Replace `<ip_addr>` and `<prefix_len>` by their appropriate values for the sender and receiver respectively.
+
 ## 2. Getting the Mapping Between CPU and Receive Queues of NIC
 
-The default RSS or RPS will forward packets to a receive queue of NIC or CPU based on the hash value of five tuples, leading performance fluctuation for different runs. Hence, in order to make the performance reproducible, we use `ntuple filter` to steer packets to a specific queue/CPU. The setup script is covered by `network_setup.py`. The only thing you need to do is to get the mapping between CPUs and receive queues. 
+The default RSS or RPS will forward packets to a receive queue of NIC or CPU based on the hash value of five tuples, leading performance fluctuation for different runs. Hence, in order to make the performance reproducible, we use flow steering to steer packets to a specific queue/CPU. The setup script is covered by `network_setup.py`. The only thing you need to do is to get the mapping between CPUs and receive queues. 
 
 The following instruction is for Mellanox NIC, which may be okay to extend for other NIC as well. We will use IRQ affinity to infer the mapping between the receive queues and the CPU cores. The assumption here is there is a one-to-one mapping between receive queue and IRQ as well.
 
-1. Set IRQ mapping between CPU and IRQ:
+1. Reset IRQ mapping between CPU and IRQ to default and disable `irqbalance` as it dynamically changes the IRQ affinity causing unexpected performance deviations.
 
 ```
-sudo set_irq_affinity.sh  <iface>
+sudo set_irq_affinity.sh <iface>
 ```
 
-2. Show the IRQ affinity:
+2. Show the IRQ affinity.
 
 ```
 sudo show_irq_affinity.sh <iface>
 ```
  
-The example is:
+For example:
  
 ```
 152: 000001
@@ -164,7 +172,7 @@ ___x__ <- NUMA ID
 
 The index in the bitmap denotes the core ID. The number `x` denotes the NUMA node of the core when interpreted as a bitmap. So the bitmap `002000` will be interpreted as 2nd NUMA (`2 = 0010`) and since it's at index 4 from the left, it's the 4th core. So this is the 4th core in 2nd NUMA node which is core 13. 
 
-3. Change `CPU_TO_RX_QUEUE_MAP` in the `constants.py`. This is the mapping from CPUs to their corresponding receive queues. For the example stated above, the mapping is:
+3. Change `CPU_TO_RX_QUEUE_MAP` in the `constants.py`. This is the mapping from CPUs to their corresponding receive queues. For the example stated above, the mapping is
 
 ```
 CPU_TO_RX_QUEUE_MAP = [int(i) for i in "0 6 7 8 1 9 10 11 2 12 13 14 3 15 16 17 4 18 19 20 5 21 22 23".split()]
