@@ -282,9 +282,6 @@ if __name__ == "__main__":
     # Parse args
     args = parse_args()
 
-    print(args)
-    exit(0)
-
     # Start the XMLRPC server thread
     server_thread.start()
 
