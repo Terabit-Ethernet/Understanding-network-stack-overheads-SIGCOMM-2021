@@ -62,7 +62,7 @@ def parse_args():
         print("Can't set --num-connections > 1 with --config single.")
         exit(1)
 
-    if args.flow_type == "mixed" and args.config != single:
+    if args.flow_type == "mixed" and args.config != "single":
         print("--flow-type mixed can only be combined with --config single.")
         exit(1)
 

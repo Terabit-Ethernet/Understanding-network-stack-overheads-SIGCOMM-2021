@@ -1,4 +1,4 @@
-# Understanding Network Stack performance for Terabit Ethernet Networks
+# Understanding Network Stack Performance for Terabit Ethernet Networks
 
 We provide here the scripts that can be used to profile the Linux kernel TCP stack running over terabit ethernet networks. The repository is organised as follows.
 
@@ -10,9 +10,9 @@ We provide here the scripts that can be used to profile the Linux kernel TCP sta
     * `network_setup.py` allows us to configure the NIC to enable/disable various offloads, set parameters and so on.
     * `constants.py` contains the constants used by our scripts.
     * `process_output.py` contains utilily code to parse outputs from the benchmarking programs.
-* `symbol_mapping.tsv` is a map from kernel symbols/function names to the classification into one of seven categories depending on their function of their place in the kernel TCP stack.
+* `symbol_mapping.tsv` is a map from kernel symbols/function names to the classification into one of seven categories depending on their function or their location in the kernel TCP stack.
 
-Below you will find instructions on how to use the tools provided in this repository to either reproduce our findings or to run the profiling on your own setup to explore it's behaviour. 
+Below you will find instructions on how to use the tools provided in this repository to either reproduce our findings or profile your own setup to explore it's characteristics. 
 
 ## Install Tools and Patch Kernel
 
@@ -22,10 +22,10 @@ The given kernel patch includes the following features.
 
 * By default, the kernel forcibly enables GSO (Generic Segmentation Offload) even when explicity disabled. This would not let us compare the performance of TSO to the baseline, so we patch the kernel to allow us to truly disable GSO.
 * Since we want to test the performace of the TCP stack in presence of packet loss, we introduce a `sysctl` parameter `net.core.packet_loss_gen` which, when enabled, drops packets in the lower layers of packet processing.
-* We introduce a patch to measure scheduling latency, by timestamping of each `skb` shortly after it's created and logging the delta between then and right before data copy is performed.
-* We also patch the kernel to capture a histogram of `skb` size after GRO (Generic Segmentation Offload) and log them.
+* We introduce a patch to measure scheduling/data copy latency, by timestamping of each `skb` shortly after it's created and logging the delta between it and right before data copy is performed.
+* We also patch the kernel to capture a histogram of `skb` sizes after GRO (Generic Segmentation Offload) and log them.
 
-We have tested our setup on Ubuntu 16.04 LTS with kernel 5.4.43. Building the kernel and installing the tools should be done on both servers.
+Our patch is based on Linux 5.4.43.
 
 1. Download Linux kernel source tree.
 
@@ -71,9 +71,7 @@ GRUB_DEFAULT="1>Ubuntu, with Linux 5.4.43-sigcomm21"
 sudo update-grub && reboot
 ```
 
-8. Do the same steps 1--7 for both servers.
-
-9. When systems are rebooted, check the kernel version, type `uname -r` in the command-line. It should be `5.4.43-sigcomm21`.
+8. When system is rebooted, check the kernel version, type `uname -r` in the command-line. It should be `5.4.43-sigcomm21`.
 
 ### Install Perf
 
@@ -122,7 +120,7 @@ cd /path/to/driver/directory
 sudo ./mlnxofedinstall
 ```
 
-3. **IMPORTANT** The NICs must be configured with certain addresses hardcoded in the kernel patch to enable deep profiling of the TCP connections. This allows us to augment the kernel code without affecting the performance of other TCP connections, and makes the measurements more accurate. Set the IP address of the sender to `192.168.10.114/24` and the IP address of the receiver to `192.168.10.115/24`. IP addresses can be set using the following command.
+3. **IMPORTANT** The NICs must be configured with certain addresses hardcoded in the kernel patch to enable deep profiling of the TCP connections. This allows us to augment the kernel code without affecting the performance of other TCP connections, and makes the measurements more accurate. Set the IP address of the server which is designated as the sender to `192.168.10.114/24` and similarly set the IP address of the server designated as the receiver to `192.168.10.115/24`. IP addresses can be set using the following command.
 
 ```
 sudo ifconfig <iface> <ip_addr>/<prefix_len>
@@ -206,7 +204,7 @@ Core 0 maps to queue 0 (IRQ 153), core 1 maps to queue 6 (IRQ 159).
 
 ## 3. Running an Experiment
 
-To run any experiment (eg. Single Flow case), 
+To run any experiment (eg. Single Flow case), configure two servers as the sender and the receiver, and install the requisite kernel and tools on both of them. Then
 
 1. At the receiver, 
 
