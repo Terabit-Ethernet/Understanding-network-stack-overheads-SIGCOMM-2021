@@ -9,7 +9,7 @@ SYMBOL_MAP_FILE = os.path.join(os.path.split(os.path.realpath(__file__))[0], "sy
 def process_throughput_output(lines):
     # Check whether the output is coming from netperf
     if len(lines) == 3 and lines[1] == "Throughput\n":
-        return float(lines[1])
+        return float(lines[2])
 
     # The output must be from iperf
     throughput = 0.

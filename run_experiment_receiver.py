@@ -275,7 +275,7 @@ def skb_hist_measurement(enabled):
 
 
 def set_packet_drop_rate(rate):
-    os.system("sysctl -w net.core.packet_drop_gen={}".format(rate))
+    os.system("sysctl -w net.core.packet_loss_gen={}".format(rate))
 
 
 if __name__ == "__main__":

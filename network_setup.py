@@ -118,7 +118,7 @@ def ntuple_send_port_to_queue(iface, port, n, loc):
     os.system("ethtool -U {} flow-type tcp4 src-port {} action {} loc {}".format(iface, port, n, MAX_RULE_LOC - loc))
 
 
-def ntuple_send_all_traffic_to_queue(iface, port, n, loc):
+def ntuple_send_all_traffic_to_queue(iface, n, loc):
     os.system("ethtool -U {} flow-type tcp4 action {} loc {}".format(iface, n, loc))
 
 
