@@ -245,6 +245,10 @@ if __name__ == "__main__":
         except ConnectionRefusedError:
             time.sleep(1)
 
+    # Print the output directory
+    if args.output is not None:
+        print("[output] writing results to {}".format(args.output))
+
     # Run the experiments
     clear_processes()
     header = []
