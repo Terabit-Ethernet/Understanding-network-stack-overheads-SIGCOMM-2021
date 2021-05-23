@@ -275,13 +275,14 @@ Our work has been evaluated with two servers with 4-socket multi-core CPUs and 1
 
 ### Running Experiments
 
-Setup the two servers as sender and receiver respectively as outlined in [Section 2](#setup-servers). This section assumes that
+This section assumes that
 
-* there is another secondary connection between the two serves through a **separate** NIC and receiver can be reached at the IP address `128.84.155.115` through that interface;
+* you used the instructions in [Section 2](#setup-server) to setup the servers;
+* there is another secondary connection between the two servers through a **separate** NIC and receiver can be reached at the IP address `128.84.155.115` through that interface;
 * the IP address of the NIC to be profiled is set to be `192.168.10.114` for the sender, and `192.168.10.115` for the receiver, in accordance with [Section 2.5](#install-ofed-driver-mellanox-nic-and-configure-nics);
 * and that the name of the interface of the NIC to be profiled is `enp37s0f1`.
 
-Please make sure you change the command-lines below to reflect any differences between your setup and the assumptions. All experiments must be run as `sudo`.
+Please make sure you change the command-lines below to reflect any differences between your setup and the assumptions, refer to [Section 3](#running-an-experiment) on how to do that. All experiments must be run as `sudo`.
 
 ```
 sudo -s
@@ -289,44 +290,46 @@ cd ~/terabit-network-stack-profiling/scripts
 ```
 
 - Figure 3(a)-3(d) (Single Flow) (~7 minutes)
-   - Sender: `bash sender/single-flow.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash receiver/single-flow.sh enp37s0f1`
+   - Sender: `bash sender/single-flow.sh`
+   - Receiver: `bash receiver/single-flow.sh`
 
 - Figure 3(e)-3(f) (Single Flow) (~11 minutes)
-   - Sender: `bash sender/tcp-buffer.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash receiver/tcp-buffer.sh enp37s0f1`
+   - Sender: `bash sender/tcp-buffer.sh`
+   - Receiver: `bash receiver/tcp-buffer.sh`
 
 - Figure 4(a)-4(b) (One-to-One) (~9 minutes)
-   - Sender: `bash sender/one-to-one.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash receiver/one-to-one.sh enp37s0f1`
+   - Sender: `bash sender/one-to-one.sh`
+   - Receiver: `bash receiver/one-to-one.sh`
 
 - Figure 5 (Incast) (~10 minutes)
-   - Sender: `bash sender/incast.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash receiver/incast.sh enp37s0f1`
+   - Sender: `bash sender/incast.sh`
+   - Receiver: `bash receiver/incast.sh`
 
 - Figure 6 (All-to-All) (~10 minutes)
-   - Sender: `bash sender/all-to-all.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash receiver/all-to-all.sh enp37s0f1`
+   - Sender: `bash sender/all-to-all.sh`
+   - Receiver: `bash receiver/all-to-all.sh`
 
 - Figure 7 (Packet Drop) (~9 minutes)
-   - Sender: `bash sender/packet-loss.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash receiver/packet-loss.sh enp37s0f1`
+   - Sender: `bash sender/packet-loss.sh`
+   - Receiver: `bash receiver/packet-loss.sh`
 
 - Figure 8(a)-8(b) (Short Flow Incast) (~12 minutes)
-   - Sender: `bash sender/short-incast.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash receiver/short-incast.sh enp37s0f1`
+   - Sender: `bash sender/short-incast.sh`
+   - Receiver: `bash receiver/short-incast.sh`
 
 - Figure 9 (Mixed Flow) (~9 minutes)
-   - Sender: `bash sender/mixed.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash receiver/mixed.sh enp37s0f1`
+   - Sender: `bash sender/mixed.sh`
+   - Receiver: `bash receiver/mixed.sh`
 
 - Figure 4(c) and 8(c) (Local vs Remote NUMA) (~4 minutes)
-   - Sender: `bash sender/numa.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash receiver/numa.sh enp37s0f1`
+   - Sender: `bash sender/numa.sh`
+   - Receiver: `bash receiver/numa.sh`
 
 - Outcast (~9 minutes)
-   - Sender: `bash sender/outcast.sh 128.84.155.115 192.168.10.115 enp37s0f1`
-   - Receiver: `bash receiver/outcast.sh enp37s0f1`
+   - Sender: `bash sender/outcast.sh`
+   - Receiver: `bash receiver/outcast.sh`
+
+The results of each experiment will be logged to `stdout` as well as to the directory `~/terabit-network-stack-profiling/results`. This directory will contain files which are named with the format `<experiment_name>_<parameter>_<optimisations>`, where `<experiment_name>` is the name of the experiment (`all-to-all`), `<parameter>` is the value of the parameter that was changed in the experiment (`4` flows, `6400` bytes RPC size), and `<optimisations>` is the set of optimisations enables for the experiment (`tsogro`, `tsogro+jumbo`, `all-opts`).
 
 ## Authors
 
