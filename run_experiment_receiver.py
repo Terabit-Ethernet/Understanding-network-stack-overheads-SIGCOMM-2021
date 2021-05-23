@@ -22,7 +22,7 @@ class subprocess:
 
     @staticmethod
     def enable_logging():
-        os.VERBOSE = True
+        subprocess.VERBOSE = True
 
     @staticmethod
     def Popen(*args, **kwargs):
@@ -208,24 +208,17 @@ def run_flows(flow_type, config, num_connections, num_rpcs, cpus, window):
         flow_func = run_iperf
     elif flow_type == "short":
         flow_func = run_netperf
-    
+
     procs = []
-    if config == "single":
+    if config in ["single", "incast"]:
         procs.append(flow_func(cpus[0], BASE_PORT, window))
-    elif config == "incast":
-        procs += [flow_func(cpus[0], BASE_PORT + n, window) for n in range(num_connections)]
-    elif config in ["one-to-one", "outcast"]:
+    else:
         procs += [flow_func(cpu, BASE_PORT + n, window) for n, cpu in enumerate(cpus)]
-    elif config == "all-to-all":
-        for i, sender_cpu in enumerate(cpus):
-            for j, receiver_cpu in enumerate(cpus):
-                procs.append(flow_func(receiver_cpu, BASE_PORT + MAX_CONNECTIONS * i + j, window))
 
     # If we're running mixed flow experiments run some additional
     # short flows
     if flow_type == "mixed":
-        for i in range(num_rpcs):
-            procs.append(run_netperf(cpus[0], ADDITIONAL_BASE_PORT + i))
+        procs.append(run_netperf(cpus[0], ADDITIONAL_BASE_PORT))
 
     return procs
 

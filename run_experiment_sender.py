@@ -22,7 +22,7 @@ class subprocess:
 
     @staticmethod
     def enable_logging():
-        os.VERBOSE = True
+        subprocess.VERBOSE = True
 
     @staticmethod
     def Popen(*args, **kwargs):
@@ -172,19 +172,21 @@ def run_flows(flow_type, config, addr, num_connections, num_rpcs, cpus, duration
     if config == "single":
         procs.append(flow_func(cpus[0], addr, BASE_PORT, duration, window, rpc_size))
     elif config == "incast":
+        procs += [flow_func(cpu, addr, BASE_PORT, duration, window, rpc_size) for cpu in cpus]
+    elif config == "outcast":
         procs += [flow_func(cpus[0], addr, BASE_PORT + n, duration, window, rpc_size) for n in range(num_connections)]
-    elif config in ["one-to-one", "outcast"]:
+    elif config == "one-to-one":
         procs += [flow_func(cpu, addr, BASE_PORT + n, duration, window, rpc_size) for n, cpu in enumerate(cpus)]
     elif config == "all-to-all":
         for i, sender_cpu in enumerate(cpus):
             for j, receiver_cpu in enumerate(cpus):
-                procs.append(flow_func(sender_cpu, addr, BASE_PORT + MAX_CONNECTIONS * i + j, duration, window, rpc_size))
+                procs.append(flow_func(sender_cpu, addr, BASE_PORT + j, duration, window, rpc_size))
 
     # If we're running mixed flow experiments run some additional
     # short flows
     if flow_type == "mixed":
         for i in range(num_rpcs):
-            procs.append(run_netperf(cpus[0], addr, ADDITIONAL_BASE_PORT + i, duration, window, rpc_size))
+            procs.append(run_netperf(cpus[0], addr, ADDITIONAL_BASE_PORT, duration, window, rpc_size))
 
     return procs
 
