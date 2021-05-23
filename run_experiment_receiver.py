@@ -198,7 +198,7 @@ def run_iperf(cpu, port, window):
 
 
 def run_netperf(cpu, port, window=None):
-    args = ["taskset", "-c", str(cpu), "netserver", "-p", str(port), "-D", "f", "-v", "2"]
+    args = ["taskset", "-c", str(cpu), "netserver", "-p", str(port), "-D", "f"]
 
     return subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True)
 

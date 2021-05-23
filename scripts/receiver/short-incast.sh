@@ -31,5 +31,5 @@ done
 # TSO/GRO+Jumbo Frame+aRFS
 $DIR/network_setup.py $iface --arfs
 for i in 4000 16000 32000 64000; do
-        $DIR/run_experiment_receiver.py --config incast --flow-type short --num-connections 16 --throughput --utilisation --util-breakdown --arfs --output results/incast_${i}_all-opts | tee results/incast_${i}_all-opts.log
+        $DIR/run_experiment_receiver.py --config incast --flow-type short --num-connections 16 --throughput --utilisation --util-breakdown --arfs --output $results_dir/short-incast_16_${i}_all-opts | tee $results_dir/short-incast_16_${i}_all-opts.log
 done
