@@ -18,5 +18,5 @@ $DIR/run_experiment_receiver.py --throughput --utilisation --cache-miss --arfs -
 $DIR/run_experiment_receiver.py --throughput --cpus 1 --utilisation --cache-miss --arfs --output $results_dir/numa_long_all-opts_remote | tee $results_dir/numa_long_all-opts_remote.log
 
 # Short Flow
-$DIR/run_experiment_receiver.py --throughput --flow-type short --utilisation --cache-miss --arfs --output $results_dir/numa_short_all-opts_local | tee $results_dir/numa_long_all-opts_local.log
-$DIR/run_experiment_receiver.py --throughput --flow-type short --cpus 1 --utilisation --cache-miss --arfs --output $results_dir/numa_short_all-opts_remote | tee $results_dir/numa_long_all-opts_remote.log
+$DIR/run_experiment_receiver.py --throughput --config incast --flow-type short --num-connections 16 --utilisation --cache-miss --arfs --output $results_dir/numa_short_all-opts_local | tee $results_dir/numa_long_all-opts_local.log
+$DIR/run_experiment_receiver.py --throughput --config incast --flow-type short --num-connections 16 --cpus 1 --utilisation --cache-miss --arfs --output $results_dir/numa_short_all-opts_remote | tee $results_dir/numa_long_all-opts_remote.log
