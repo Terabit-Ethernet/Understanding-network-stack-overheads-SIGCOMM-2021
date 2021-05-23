@@ -337,13 +337,13 @@ The results of each experiment will be logged to `stdout` as well as to the dire
 
 We report some or all of the following metrics in our experiments.
 
-* **Throughput**: The unidirectional aggregate throughput in Gbps, reported on the sender-side.
-* **Utilisation**: CPU utilisation in percent (%) on the sender-side and the receiver-side, reported on the respective servers.
-* **Cache Miss:** Cache-miss rate in (%) on the sender-side and receiver-side, reported on the respective servers.
+* **Throughput**: Unidirectional aggregate throughput (in Gbps) reported on the sender-side.
+* **Utilisation**: CPU utilisation (in percent (%)) on the sender-side and the receiver-side, reported on the respective servers.
+* **Cache Miss:** Cache-miss rate (in percent (%)) on the sender-side and receiver-side, reported on the respective servers.
 * **CPU Utilisation Breakdown**: Fraction of CPU cycles taken by various layers of the kernel TCP stack, reported on the respective servers.
-* **Cache Miss Breakdown**: Fraction of cache misses taken by various layers of the kernel TCP stack, reported on the respective servers.
-* **Data Copy/Scheduling Latency:** Time in μs from the creation of the `skb` to when it's copied to the user buffers, reported on the receiver-side.
-* **skb Sizes Histogram**: The fraction of `skb` sizes in KB that lie in the respective ranges, reported on the receiver-side.
+* **Cache Miss Breakdown**: Fraction of cache misses that occur in various layers of the kernel TCP stack, reported on the respective servers.
+* **Data Copy/Scheduling Latency:** Time (in μs) from the creation of the `skb` to when it's copied to the user buffers, reported on the receiver-side.
+* **skb Sizes Histogram**: Fraction of `skb`s which, after GRO, have a size (in KB) that lies in the respective range, reported on the receiver-side.
 * **Throughput-per-core**: Has to be calculated by dividing the throughput with the CPU utilisation of the bottleneck.
     * For outcast experiments, it's throughput divided by sender-side CPU utilisation.
     * For all other experiments, it's throughput divided by receiver-side CPU utilisation.
