@@ -20,5 +20,5 @@ $DIR/run_experiment_sender.py --receiver $public_dst_ip --addr $device_dst_ip --
 $DIR/run_experiment_sender.py --receiver $public_dst_ip --addr $device_dst_ip --throughput --cpus 1 --utilisation --cache-miss --arfs --output $results_dir/numa_long_all-opts_remote | tee $results_dir/numa_long_all-opts_remote.log
 
 # Short Flow
-$DIR/run_experiment_sender.py --receiver $public_dst_ip --addr $device_dst_ip --throughput --config incast --flow-type short --num-connections 16 --utilisation --cache-miss --arfs --output $results_dir/numa_short_all-opts_local | tee $results_dir/numa_long_all-opts_local.log
-$DIR/run_experiment_sender.py --receiver $public_dst_ip --addr $device_dst_ip --throughput --config incast --flow-type short --num-connections 16 --utilisation --cache-miss --arfs --output $results_dir/numa_short_all-opts_remote | tee $results_dir/numa_long_all-opts_remote.log
+$DIR/run_experiment_sender.py --receiver $public_dst_ip --addr $device_dst_ip --throughput --config incast --flow-type short --num-connections 16 --utilisation --cache-miss --arfs --output $results_dir/numa_short_all-opts_local | tee $results_dir/numa_short_all-opts_local.log
+$DIR/run_experiment_sender.py --receiver $public_dst_ip --addr $device_dst_ip --throughput --config incast --flow-type short --num-connections 16 --utilisation --cache-miss --arfs --output $results_dir/numa_short_all-opts_remote | tee $results_dir/numa_short_all-opts_remote.log
