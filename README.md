@@ -348,6 +348,10 @@ We report some or all of the following metrics in our experiments.
     * For outcast experiments, it's throughput divided by sender-side CPU utilisation.
     * For all other experiments, it's throughput divided by receiver-side CPU utilisation.
 
+### Errors
+
+In case of errors, like freezes, crashes, or unexpected error messages, please reboot the servers. That should clear out any erroneous leftover processes and/or bad config and allow you to run the experiments.
+
 ## Authors
 
 * Shubham Chaudhary 

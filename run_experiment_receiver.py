@@ -186,6 +186,8 @@ server.register_function(mark_sender_done)
 # Convenience functions
 def clear_processes():
     os.system("pkill iperf")
+    os.system("pkill netserver")
+    os.system("pkill netperf")
     os.system("pkill perf")
     os.system("pkill sar")
 
