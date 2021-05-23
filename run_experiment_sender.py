@@ -102,10 +102,12 @@ def parse_args():
         if args.config in ["single", "outcast"] and len(args.cpus) != 1:
             print("Please provide only 1 --cpus for --config outcast/single.")
             exit(1)
-        elif len(args.cpus) != args.num_connections:
+
+        if args.config in ["one-to-one", "incast", "all-to-all"] and len(args.cpus) != args.num_connections:
             print("Please provide as many --cpus as --num-connections for --config incast/one-to-one/all-to-all.")
             exit(1)
-        elif not all(map(lambda c: 0 <= c < MAX_CPUS, args.cpus)):
+
+        if not all(map(lambda c: 0 <= c < MAX_CPUS, args.cpus)):
             print("Can't set --cpus outside of [0, {}].".format(MAX_CPUS))
             exit(1)
     else:
