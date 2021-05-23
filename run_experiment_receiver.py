@@ -279,8 +279,7 @@ def latency_measurement(enabled):
 
 
 def skb_hist_measurement(enabled):
-    os.system("echo {} > /sys/module/tcp_offload/parameters/skb_size_hist_on".format(int(enabled)))
-    os.system("echo 100000 > /sys/module/tcp_offload/parameters/skb_size_sampling_count")
+    os.system("echo {} > /sys/module/ip_input/parameters/skb_size_hist_on".format(int(enabled)))
 
 
 def set_packet_drop_rate(rate):

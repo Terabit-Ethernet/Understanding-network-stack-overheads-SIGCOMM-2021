@@ -73,7 +73,9 @@ scripts/config --disable DEBUG_INFO # Disables building debugging related files
 
 ```
 make -j`nproc` LOCALVERSION=-sigcomm21 bindeb-pkg
-sudo dpkg -i ../linux-headers-5.4.43-sigcomm21_5.4.43-sigcomm21-1_amd64.deb ../linux-image-5.4.43-sigcomm21_5.4.43-sigcomm21-1_amd64.deb
+sudo dpkg -i ../linux-headers-5.4.43-sigcomm21_5.4.43-sigcomm21-1_amd64.deb \
+             ../linux-image-5.4.43-sigcomm21_5.4.43-sigcomm21-1_amd64.deb   \
+             ../linux-libc-dev_5.4.43-sigcomm21-1_amd64.deb
 ```
 
 6. Edit `/etc/default/grub` to boot with your new kernel by default. For example

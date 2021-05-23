@@ -118,8 +118,9 @@ def process_latency_output(lines):
 
     # Sort and get average and tail
     samples.sort()
-    avg_latency = (sum(samples) / len(samples)) / 1000
-    tail_latency = samples[round(0.99 * len(samples) + 0.5)] / 1000
+    num_samples = len(samples)
+    avg_latency = (sum(samples) / num_samples) / 1000
+    tail_latency = samples[max(num_samples - 1, round(0.99 * num_samples + 0.5))] / 1000
 
     return avg_latency, tail_latency
 
