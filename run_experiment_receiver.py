@@ -671,8 +671,8 @@ if __name__ == "__main__":
 
     # Print skb sizes histogram
     if args.skb_hist:
-        keys = [500] + list(range(5000, 65000, 5000))
+        keys = ["{}-{}".format(a, b) for a, b in zip(range(0, 65, 5), range(5, 70, 5))]
         print("[skb sizes histogram]")
-        print("\t".join(map(str, keys)))
+        print("\t".join(keys))
         print("\t".join(["{:.3f}".format(s) for s in skb_sizes]))
 

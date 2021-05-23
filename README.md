@@ -69,21 +69,21 @@ scripts/config --disable DEBUG_INFO # Disables building debugging related files
 
 `x.x.x` is a kernel version. It can be your current kernel version or latest version your system has. Type  `uname -r` to see your current kernel version.  
 
-5. Compile and install. The `LOCALVERSION=-sigcomm21` option can be replaced by any custom marker. Remember to replace `sigcomm21` with your own definition in the rest of the instructions.
+5. Compile and install. The `LOCALVERSION=-profiling` option can be replaced by any custom marker. Remember to replace `profiling` with your own definition in the rest of the instructions.
 
 ```
-make -j`nproc` LOCALVERSION=-sigcomm21 bindeb-pkg
-sudo dpkg -i ../linux-headers-5.4.43-sigcomm21_5.4.43-sigcomm21-1_amd64.deb \
-             ../linux-image-5.4.43-sigcomm21_5.4.43-sigcomm21-1_amd64.deb   \
-             ../linux-libc-dev_5.4.43-sigcomm21-1_amd64.deb
+make -j`nproc` LOCALVERSION=-profiling bindeb-pkg
+sudo dpkg -i ../linux-headers-5.4.43-profiling_5.4.43-profiling-1_amd64.deb \
+             ../linux-image-5.4.43-profiling_5.4.43-profiling-1_amd64.deb   \
+             ../linux-libc-dev_5.4.43-profiling-1_amd64.deb
 ```
 
-**NOTE** If you rebuild the kernel packages more than once, they might have a different version, for example, `linux-headers-5.4.43-sigcomm21_5.4.43-sigcomm21-2_amd64.deb`. Make sure you install the `.deb` packages you have just built and not an old one.
+**NOTE** If you rebuild the kernel packages more than once, they might have a different version, for example, `linux-headers-5.4.43-profiling_5.4.43-profiling-2_amd64.deb`. Make sure you install the `.deb` packages you have just built and not an old one.
 
 6. Edit `/etc/default/grub` to boot with your new kernel by default. For example
 
 ```
-GRUB_DEFAULT="1>Ubuntu, with Linux 5.4.43-sigcomm21"
+GRUB_DEFAULT="1>Ubuntu, with Linux 5.4.43-profiling"
 ```
 
 7. Update the grub configuration and reboot into the new kernel.
@@ -92,7 +92,7 @@ GRUB_DEFAULT="1>Ubuntu, with Linux 5.4.43-sigcomm21"
 sudo update-grub && reboot
 ```
 
-8. When system is rebooted, check the kernel version, type `uname -r` in the command-line. It should be `5.4.43-sigcomm21`.
+8. When system is rebooted, check the kernel version, type `uname -r` in the command-line. It should be `5.4.43-profiling`.
 
 ### Install perf
 
