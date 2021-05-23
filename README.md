@@ -41,7 +41,7 @@ The given kernel patch includes the following features.
 * We introduce a patch to measure scheduling/data copy latency, by timestamping of each `skb` shortly after it's created and logging the delta between it and right before data copy is performed.
 * We also patch the kernel to capture a histogram of `skb` sizes after GRO (Generic Segmentation Offload) and log them.
 
-Our patch is based on Linux 5.4.43. Use the following instructions to build and install the kernel.
+Our patch is based on Linux 5.4.43. On Ubuntu 16.04, you can use the following instructions to build and install the kernel.
 
 1. Download Linux kernel source tree.
 
@@ -77,6 +77,8 @@ sudo dpkg -i ../linux-headers-5.4.43-sigcomm21_5.4.43-sigcomm21-1_amd64.deb \
              ../linux-image-5.4.43-sigcomm21_5.4.43-sigcomm21-1_amd64.deb   \
              ../linux-libc-dev_5.4.43-sigcomm21-1_amd64.deb
 ```
+
+**NOTE** If you rebuild the kernel packages more than once, they might have a different version, for example, `linux-headers-5.4.43-sigcomm21_5.4.43-sigcomm21-2_amd64.deb`. Make sure you install the `.deb` packages you have just built and not an old one.
 
 6. Edit `/etc/default/grub` to boot with your new kernel by default. For example
 
