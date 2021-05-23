@@ -16,10 +16,10 @@ mkdir -p $results_dir
 $DIR/network_setup.py $iface --gro --tso --arfs --mtu 9000 --sock-size
 
 # Long Flow
-$DIR/run_experiment_sender.py --receiver $public_dst_ip --addr $device_dst_ip --throughput --utilisation --cache-miss --arfs --output $results_dir/numa_long_all-opts_local | $results_dir/numa_long_all-opts_local.log
-$DIR/run_experiment_sender.py --receiver $public_dst_ip --addr $device_dst_ip --throughput --cpus 1 --utilisation --cache-miss --arfs --output $results_dir/numa_long_all-opts_remote | $results_dir/numa_long_all-opts_remote.log
+$DIR/run_experiment_sender.py --receiver $public_dst_ip --addr $device_dst_ip --throughput --utilisation --cache-miss --arfs --output $results_dir/numa_long_all-opts_local | tee $results_dir/numa_long_all-opts_local.log
+$DIR/run_experiment_sender.py --receiver $public_dst_ip --addr $device_dst_ip --throughput --cpus 1 --utilisation --cache-miss --arfs --output $results_dir/numa_long_all-opts_remote | tee $results_dir/numa_long_all-opts_remote.log
 
 # Short Flow
-$DIR/run_experiment_sender.py --receiver $public_dst_ip --addr $device_dst_ip --throughput --flow-type short --utilisation --cache-miss --arfs --output $results_dir/numa_short_all-opts_local | $results_dir/numa_long_all-opts_local.log
-$DIR/run_experiment_sender.py --receiver $public_dst_ip --addr $device_dst_ip --throughput --flow-type short --cpus 1 --utilisation --cache-miss --arfs --output $results_dir/numa_short_all-opts_remote | $results_dir/numa_long_all-opts_remote.log
+$DIR/run_experiment_sender.py --receiver $public_dst_ip --addr $device_dst_ip --throughput --flow-type short --utilisation --cache-miss --arfs --output $results_dir/numa_short_all-opts_local | tee $results_dir/numa_long_all-opts_local.log
+$DIR/run_experiment_sender.py --receiver $public_dst_ip --addr $device_dst_ip --throughput --flow-type short --cpus 1 --utilisation --cache-miss --arfs --output $results_dir/numa_short_all-opts_remote | tee $results_dir/numa_long_all-opts_remote.log
 
