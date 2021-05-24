@@ -35,13 +35,13 @@ index 120b994..93f461d 100644
  	}
  
 +	/* emulate packet drop */
-+ 	if (sysctl_packet_loss_gen > 0) {
-+ 		if (packet_loss_counter >= sysctl_packet_loss_gen) {
-+ 			ret = GRO_DROP;
-+ 			packet_loss_counter = 0;
-+ 			goto ok;
-+ 		}
-+ 	}
++	if (sysctl_packet_loss_gen > 0) {
++		if (packet_loss_counter >= sysctl_packet_loss_gen) {
++			ret = GRO_DROP;
++			packet_loss_counter = 0;
++			goto ok;
++		}
++	}
 +
  	same_flow = NAPI_GRO_CB(skb)->same_flow;
  	ret = NAPI_GRO_CB(skb)->free ? GRO_MERGED_FREE : GRO_MERGED;
@@ -77,7 +77,7 @@ index 9f9e00b..994e2e0 100644
  
  static struct ctl_table net_core_table[] = {
  #ifdef CONFIG_NET
-+	{       
++	{
 +		.procname	= "packet_loss_gen",
 +		.data		= &sysctl_packet_loss_gen,
 +		.maxlen		= sizeof(int),
@@ -135,7 +135,7 @@ index c59a78a..846200e 100644
 +MODULE_PARM_DESC(skb_size_sampling_count, "granularity of sampling skb sizes");
 +EXPORT_SYMBOL(skb_size_sampling_count);
 +
-+unsigned long tcp_histo[13] = {0}; 
++unsigned long tcp_histo[13] = {0};
 +
  static int ip_rcv_finish(struct net *net, struct sock *sk, struct sk_buff *skb)
  {
@@ -200,7 +200,7 @@ index c59a78a..846200e 100644
 +		else if (size >= 500)
 +			tcp_histo[0]++;
 +
-+		index++;	
++		index++;
 +	}
 +
  	/* Must drop socket now because of tproxy. */
@@ -255,7 +255,7 @@ index fe3cded..136ca86 100644
 +					if (index >= latency_sampling_count && skb_shinfo(skb)->gro_tstamp != 0) {
 +						printk(KERN_INFO "[data-copy-latency] latency=%llu", ktime_to_ns(ktime_sub(ktime_get(), skb_shinfo(skb)->gro_tstamp)));
 +						index = 0;
-+					} 
++					}
 +					index++;
 +				}
 +			}
