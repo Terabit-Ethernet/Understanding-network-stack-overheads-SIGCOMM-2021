@@ -273,16 +273,20 @@ We have used the follwing hardware and software configurations for running the e
 
 Our work has been evaluated with two servers with 4-socket multi-core CPUs and 100 Gbps NICs directly connected with a DAC cable. While we generally focus on trends rather than individual data points, other combinations of end-host network stacks and hardware may exhibit different performance characteristics. All our scripts use `network_setup.sh` to configure the NIC to allow a specific benchmark to be performed. Some of these configurations may be specific to Mellanox NICs (e.g. enabling aRFS).
 
-### Running Experiments
+### Assumptions
 
-This section assumes that
+The next section assumes that
 
 * you used the instructions in [Section 2](#setup-servers) to setup the servers;
 * there is another secondary connection between the two servers through a **separate** NIC and receiver can be reached at the IP address `128.84.155.115` through that interface;
 * the IP address of the NIC to be profiled is set to be `192.168.10.114` for the sender, and `192.168.10.115` for the receiver, in accordance with [Section 2.5](#install-ofed-driver-mellanox-nic-and-configure-nics);
 * and that the name of the interface of the NIC to be profiled is `enp37s0f1`.
 
-The scripts given below have hardcoded default arguments in accordance with the above assumptions, so that they can be run as is. Please make sure you change the command-lines below to reflect any differences between your setup and the assumptions, refer to [Section 3](#running-an-experiment) on how to do that. All experiments must be run as `sudo`.
+The scripts given below have hardcoded default arguments in accordance with the above assumptions, so that they can be run as is. Please make sure you change the command-lines below to reflect any differences between your setup and the assumptions, refer to [Section 3](#running-an-experiment) on how to do that.
+
+### Running Experiments
+
+All experiments must be run as `sudo`. Run the scripts corresponding to each experiment on the sender and receiver respectively. 
 
 ```
 sudo -s
@@ -309,7 +313,7 @@ cd ~/terabit-network-stack-profiling/scripts
    - Sender: `bash sender/all-to-all.sh`
    - Receiver: `bash receiver/all-to-all.sh`
 
-- Figure 7 (Packet Drop) (~9 minutes)
+- Figure 7 (Packet Drops) (~9 minutes)
    - Sender: `bash sender/packet-loss.sh`
    - Receiver: `bash receiver/packet-loss.sh`
 
@@ -325,7 +329,7 @@ cd ~/terabit-network-stack-profiling/scripts
    - Sender: `bash sender/numa.sh`
    - Receiver: `bash receiver/numa.sh`
 
-- Outcast (~9 minutes)
+- Appendix (Outcast) (~9 minutes)
    - Sender: `bash sender/outcast.sh`
    - Receiver: `bash receiver/outcast.sh`
 
