@@ -43,7 +43,7 @@ def parse_args():
     parser.add_argument("--num-connections", type=int, default=1, help="Number of connections.")
     parser.add_argument("--rpc-size", type=int, default=4000, help="Size of the RPC for short flows.")
     parser.add_argument("--num-rpcs", type=int, default=0, help="Number of short flows (for mixed flow type).")
-    parser.add_argument('--arfs', action='store_true', default=False, help='This experiment is run with aRFS.')
+    parser.add_argument("--arfs", action="store_true", default=False, help="This experiment is run with aRFS.")
     parser.add_argument("--duration", type=int, default=20, help="Duration of the experiment in seconds.")
     parser.add_argument("--window", type=int, default=None, help="Specify the TCP window size (KB).")
     parser.add_argument("--output", type=str, default=None, help="Write raw output to the directory.")
@@ -586,6 +586,19 @@ if __name__ == "__main__":
 
     # Sync with receiver before exiting
     receiver.is_receiver_ready()
+
+    # Get the results from receiver-side
+    receiver_results = receiver.get_results()
+    header += receiver_results["header"]
+    output += receiver_results["output"]
+    if args.throughput and args.utilisation:
+        header.append("throughput per core (Gbps)")
+        if args.config == "outcast":
+            output.append("{:.3f}".format(throughput * 100 / cpu_util))
+        else:
+            output.append("{:.3f}".format(throughput * 100 / receiver_results["cpu_util"]))
+
+    # Mark sender as done
     receiver.mark_sender_ready()
 
     # Sleep before beginning the next experiment
@@ -602,14 +615,34 @@ if __name__ == "__main__":
     # Print utilisation breakdown if required
     if args.util_breakdown:
         keys = sorted(util_contibutions.keys())
-        print("[utilisation breakdown]")
+        print("[sender utilisation breakdown]")
+        print("\t".join(keys))
+        print("\t".join(["{:.3f}".format(util_contibutions[k]) for k in keys]))
+
+        util_contibutions = receiver_results["util_contibutions"]
+        keys = sorted(util_contibutions.keys())
+        print("[receiver utilisation breakdown]")
         print("\t".join(keys))
         print("\t".join(["{:.3f}".format(util_contibutions[k]) for k in keys]))
 
     # Print cache breakdown if required
     if args.cache_breakdown:
         keys = sorted(cache_contibutions.keys())
-        print("[cache breakdown]")
+        print("[sender cache breakdown]")
         print("\t".join(keys))
         print("\t".join(["{:.3f}".format(cache_contibutions[k]) for k in keys]))
+        
+        cache_contibutions = receiver_results["cache_contibutions"]
+        keys = sorted(cache_contibutions.keys())
+        print("[receiver cache breakdown]")
+        print("\t".join(keys))
+        print("\t".join(["{:.3f}".format(cache_contibutions[k]) for k in keys]))
+
+    # Print skb sizes histogram
+    if args.skb_hist:
+        skb_sizes = receiver_results["skb_sizes"]
+        keys = ["{}-{}".format(a, b) for a, b in zip(range(0, 65, 5), range(5, 70, 5))]
+        print("[skb sizes histogram]")
+        print("\t".join(keys))
+        print("\t".join(["{:.3f}".format(s) for s in skb_sizes]))
 

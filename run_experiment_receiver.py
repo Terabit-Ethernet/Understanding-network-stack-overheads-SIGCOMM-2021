@@ -40,7 +40,7 @@ def parse_args():
     parser.add_argument("--affinity", type=int, nargs="*", help="Which CPUs are being used for IRQ processing.")
     parser.add_argument("--num-connections", type=int, default=1, help="Number of connections.")
     parser.add_argument("--num-rpcs", type=int, default=0, help="Number of short flows (for mixed flow type).")
-    parser.add_argument('--arfs', action='store_true', default=False, help='This experiment is run with aRFS.')
+    parser.add_argument("--arfs", action="store_true", default=False, help="This experiment is run with aRFS.")
     parser.add_argument("--window", type=int, default=None, help="Specify the TCP window size (KB).")
     parser.add_argument("--packet-drop", type=int, default=0, help="Inverse packet drop rate.")
     parser.add_argument("--output", type=str, default=None, help="Write raw output to the directory.")
@@ -143,6 +143,10 @@ __receiver_ready = threading.Event()
 __sender_done = threading.Event()
 
 
+# Stores the results from the receiver
+__results = {}
+
+
 # Functions to query/set synchronization events
 def mark_sender_ready():
     __sender_ready.set()
@@ -177,10 +181,15 @@ def is_sender_done():
     return True
 
 
+def get_results():
+    return __results
+
+
 # Register functions
 server.register_function(mark_sender_ready)
 server.register_function(is_receiver_ready)
 server.register_function(mark_sender_done)
+server.register_function(get_results)
 
 
 # Convenience functions
@@ -360,6 +369,7 @@ if __name__ == "__main__":
 
         lines = sar.stdout.readlines()
         cpu_util = sum(process_util_output(lines).values())
+        __results["cpu_util"] = cpu_util
         if args.output is not None:
             with open(os.path.join(args.output, "utilisation_sar.log"), "w") as f:
                 f.writelines(lines)
@@ -402,6 +412,7 @@ if __name__ == "__main__":
 
         lines = perf.stdout.readlines()
         cache_miss = process_cache_miss_output(lines)
+        __results["cache_miss"] = cache_miss
         if args.output is not None:
             with open(os.path.join(args.output, "cache-miss_perf.log"), "w") as f:
                 f.writelines(lines)
@@ -450,6 +461,7 @@ if __name__ == "__main__":
         output_dir.cleanup()
         lines = perf.stdout.readlines()
         total_contrib, unaccounted_contrib, util_contibutions, not_found = process_util_breakdown_output(lines)
+        __results["util_contibutions"] = util_contibutions
         if args.output is not None:
             with open(os.path.join(args.output, "util-breakdown_perf.log"), "w") as f:
                 f.writelines(lines)
@@ -498,6 +510,7 @@ if __name__ == "__main__":
         output_dir.cleanup()
         lines = perf.stdout.readlines()
         total_contrib, unaccounted_contrib, cache_contibutions, not_found = process_util_breakdown_output(lines)
+        __results["cache_contibutions"] = cache_contibutions
         if args.output is not None:
             with open(os.path.join(args.output, "cache-breakdown_perf.log"), "w") as f:
                 f.writelines(lines)
@@ -586,10 +599,12 @@ if __name__ == "__main__":
             lines += new_lines
             if len(new_lines) == 0 and dmesg.poll() != None:
                 break
+        avg_latency, tail_latency = process_latency_output(lines)
+        __results["avg_latency"] = avg_latency
+        __results["tail_latency"] = tail_latency
         if args.output is not None:
             with open(os.path.join(args.output, "latency_dmesg.log"), "w") as f:
                 f.writelines(lines)
-        avg_latency, tail_latency = process_latency_output(lines)
 
         # Print the output
         print("[latency] avg. data copy latency: {:.3f}\ttail data copy latency: {}".format(avg_latency, tail_latency))
@@ -639,10 +654,15 @@ if __name__ == "__main__":
             lines += new_lines
             if len(new_lines) == 0 and dmesg.poll() != None:
                 break
+        skb_sizes = process_skb_sizes_output(lines)
+        __results["skb_sizes"] = skb_sizes
         if args.output is not None:
             with open(os.path.join(args.output, "skb-hist_dmesg.log"), "w") as f:
                 f.writelines(lines)
-        skb_sizes = process_skb_sizes_output(lines)
+
+    # Add the headers to the results
+    __results["header"] = header
+    __results["output"] = output
 
     # Sync with server again
     mark_receiver_ready()
@@ -654,33 +674,3 @@ if __name__ == "__main__":
 
     # Reset packet drop rate
     set_packet_drop_rate(0)
-
-    # Print final stats
-    if len(header) > 0 or args.util_breakdown or args.cache_breakdown or args.skb_hist:
-        print("[summary]")
-
-    if len(header) > 0:
-        print("\t".join(header))
-        print("\t".join(output))
-
-    # Print breakdown if required
-    if args.util_breakdown:
-        keys = sorted(util_contibutions.keys())
-        print("[utilisation breakdown]")
-        print("\t".join(keys))
-        print("\t".join(["{:.3f}".format(util_contibutions[k]) for k in keys]))
-
-    # Print breakdown if required
-    if args.cache_breakdown:
-        keys = sorted(cache_contibutions.keys())
-        print("[cache breakdown]")
-        print("\t".join(keys))
-        print("\t".join(["{:.3f}".format(cache_contibutions[k]) for k in keys]))
-
-    # Print skb sizes histogram
-    if args.skb_hist:
-        keys = ["{}-{}".format(a, b) for a, b in zip(range(0, 65, 5), range(5, 70, 5))]
-        print("[skb sizes histogram]")
-        print("\t".join(keys))
-        print("\t".join(["{:.3f}".format(s) for s in skb_sizes]))
-
