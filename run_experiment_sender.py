@@ -260,7 +260,7 @@ if __name__ == "__main__":
         receiver.mark_sender_ready()
         receiver.is_receiver_ready()
         print("[throughput] starting experiment...")
-        
+
         # Start iperf and/or netperf instances
         procs = run_flows(args.flow_type, args.config, args.addr, args.num_connections, args.num_rpcs, args.cpus, args.duration, args.window, args.rpc_size)
 
@@ -291,10 +291,10 @@ if __name__ == "__main__":
         receiver.mark_sender_ready()
         receiver.is_receiver_ready()
         print("[utilisation] starting experiment...")
-        
+
         # Start iperf and/or netperf instances
         procs = run_flows(args.flow_type, args.config, args.addr, args.num_connections, args.num_rpcs, args.cpus, args.duration, args.window, args.rpc_size)
-       
+
         # Start the sar instance
         sar = run_sar(list(set(args.cpus + args.affinity)))
 
@@ -335,7 +335,7 @@ if __name__ == "__main__":
         receiver.mark_sender_ready()
         receiver.is_receiver_ready()
         print("[cache miss] starting experiment...")
-        
+
         # Start iperf and/or netperf instances
         procs = run_flows(args.flow_type, args.config, args.addr, args.num_connections, args.num_rpcs, args.cpus, args.duration, args.window, args.rpc_size)
 
@@ -379,7 +379,7 @@ if __name__ == "__main__":
         receiver.mark_sender_ready()
         receiver.is_receiver_ready()
         print("[util breakdown] starting experiment...")
-        
+
         # Start iperf and/or netperf instances
         procs = run_flows(args.flow_type, args.config, args.addr, args.num_connections, args.num_rpcs, args.cpus, args.duration, args.window, args.rpc_size)
 
@@ -434,10 +434,10 @@ if __name__ == "__main__":
         receiver.mark_sender_ready()
         receiver.is_receiver_ready()
         print("[cache breakdown] starting experiment...")
-        
+
         # Start iperf and/or netperf instances
         procs = run_flows(args.flow_type, args.config, args.addr, args.num_connections, args.num_rpcs, args.cpus, args.duration, args.window, args.rpc_size)
- 
+
         # Start the perf instance
         output_dir = tempfile.TemporaryDirectory()
         perf_data_file = os.path.join(output_dir.name, "perf.data")
@@ -488,10 +488,10 @@ if __name__ == "__main__":
         receiver.mark_sender_ready()
         receiver.is_receiver_ready()
         print("[flame] starting experiment...")
-        
+
         # Start iperf and/or netperf instances
         procs = run_flows(args.flow_type, args.config, args.addr, args.num_connections, args.num_rpcs, args.cpus, args.duration, args.window, args.rpc_size)
- 
+
         # Start the perf instance
         output_dir = tempfile.TemporaryDirectory()
         perf_data_file = os.path.join(output_dir.name, "perf.data")
@@ -531,7 +531,7 @@ if __name__ == "__main__":
         receiver.mark_sender_ready()
         receiver.is_receiver_ready()
         print("[latency] starting experiment...")
-        
+
         # Start iperf and/or netperf instances
         procs = run_flows(args.flow_type, args.config, args.addr, args.num_connections, args.num_rpcs, args.cpus, args.duration, args.window, args.rpc_size)
 
@@ -560,7 +560,7 @@ if __name__ == "__main__":
         receiver.mark_sender_ready()
         receiver.is_receiver_ready()
         print("[skb hist] starting experiment...")
-        
+
         # Start iperf and/or netperf instances
         procs = run_flows(args.flow_type, args.config, args.addr, args.num_connections, args.num_rpcs, args.cpus, args.duration, args.window, args.rpc_size)
 
@@ -570,7 +570,7 @@ if __name__ == "__main__":
 
         # Sender is done sending
         receiver.mark_sender_done()
-        print("[skb sizes histogram] finished experiment.")
+        print("[skb hist] finished experiment.")
 
         # Process and write the raw output
         throughput = 0
@@ -582,7 +582,7 @@ if __name__ == "__main__":
             throughput += process_throughput_output(lines)
 
         # Print the output
-        print("[skb sizes histogram] total throughput: {:.3f}".format(throughput))
+        print("[skb hist] total throughput: {:.3f}".format(throughput))
 
     # Sync with receiver before exiting
     receiver.is_receiver_ready()
@@ -631,7 +631,7 @@ if __name__ == "__main__":
         print("[sender cache breakdown]")
         print("\t".join(keys))
         print("\t".join(["{:.3f}".format(cache_contibutions[k]) for k in keys]))
-        
+
         cache_contibutions = receiver_results["cache_contibutions"]
         keys = sorted(cache_contibutions.keys())
         print("[receiver cache breakdown]")

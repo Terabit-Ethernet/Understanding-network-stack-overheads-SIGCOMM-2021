@@ -17,7 +17,7 @@ for i in 2 4 8; do
 done
 
 # TSO/GRO
-$DIR/network_setup.py $iface --gro --tso 
+$DIR/network_setup.py $iface --gro --tso
 for i in 2 4 8; do
         $DIR/run_experiment_receiver.py --config outcast --num-connections $i --throughput --utilisation --output $results_dir/outcast_${i}_tsogro | tee $results_dir/outcast_${i}_tsogro.log
 done

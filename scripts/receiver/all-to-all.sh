@@ -20,7 +20,7 @@ for i in 8 16 24; do
 done
 
 # TSO/GRO
-$DIR/network_setup.py $iface --gro --tso 
+$DIR/network_setup.py $iface --gro --tso
 for i in 8 16 24; do
         $DIR/run_experiment_receiver.py --config all-to-all --num-connections $i --throughput --utilisation --output $results_dir/all-to-all_${i}_tsogro | tee $results_dir/all-to-all_${i}_tsogro.log
 done

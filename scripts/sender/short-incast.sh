@@ -35,3 +35,6 @@ $DIR/network_setup.py $iface --arfs
 for i in 4000 16000 32000 64000; do
         $DIR/run_experiment_sender.py --addr $device_dst_ip --receiver $public_dst_ip --config incast --flow-type short --rpc-size $i --num-connections 16 --throughput --utilisation --util-breakdown --arfs --output $results_dir/short-incast_16_${i}_all-opts | tee $results_dir/short-incast_16_${i}_all-opts.log
 done
+
+# Print results
+$DIR/scripts/parse/short-incast.sh $results_dir

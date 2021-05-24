@@ -91,11 +91,11 @@ def parse_args():
         if args.config in ["single", "incast"] and len(args.cpus) != 1:
             print("Please provide only 1 --cpus for --config incast/single.")
             exit(1)
-        
+
         if args.config in ["one-to-one", "outcast", "all-to-all"] and len(args.cpus) != args.num_connections:
             print("Please provide as many --cpus as --num-connections for --config outcast/one-to-one/all-to-all.")
             exit(1)
-        
+
         if not all(map(lambda c: 0 <= c < MAX_CPUS, args.cpus)):
             print("Can't set --cpus outside of [0, {}].".format(MAX_CPUS))
             exit(1)
@@ -340,7 +340,7 @@ if __name__ == "__main__":
         # Wait till sender starts
         is_sender_ready()
         print("[utilisation] starting experiment...")
-        
+
         # Start iperf and/or netperf instances
         procs = run_flows(args.flow_type, args.config, args.num_connections, args.num_rpcs, args.cpus, args.window)
 
@@ -383,7 +383,7 @@ if __name__ == "__main__":
         # Wait till sender starts
         is_sender_ready()
         print("[cache miss] starting experiment...")
-        
+
        # Start iperf and/or netperf instances
         procs = run_flows(args.flow_type, args.config, args.num_connections, args.num_rpcs, args.cpus, args.window)
 
@@ -622,7 +622,7 @@ if __name__ == "__main__":
 
         # Wait till sender starts
         is_sender_ready()
-        print("[skb sizes histogram] starting experiment...")
+        print("[skb hist] starting experiment...")
 
         # Start iperf and/or netperf instances
         procs = run_flows(args.flow_type, args.config, args.num_connections, args.num_rpcs, args.cpus, args.window)
@@ -634,7 +634,7 @@ if __name__ == "__main__":
         # Kill all the processes
         for p in procs:
             p.kill()
-        print("[skb sizes histogram] finished experiment.")
+        print("[skb hist] finished experiment.")
 
         # Disable skb size histogram measurement
         skb_hist_measurement(enabled=False)

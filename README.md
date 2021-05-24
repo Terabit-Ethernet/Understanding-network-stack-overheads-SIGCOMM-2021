@@ -18,7 +18,7 @@ The repository is organised as follows.
     * `process_output.py` contains utilily code to parse outputs from the benchmarking programs.
 * `symbol_mapping.tsv` is a map from kernel symbols/function names to the classification into one of seven categories depending on their function or their location in the kernel TCP stack.
 
-Below you will find instructions on how to use the tools provided in this repository to either reproduce our findings or profile your own setup to explore it's characteristics. 
+Below you will find instructions on how to use the tools provided in this repository to either reproduce our findings or profile your own setup to explore it's characteristics.
 
 ## Setup Servers
 
@@ -67,7 +67,7 @@ make oldconfig
 scripts/config --disable DEBUG_INFO # Disables building debugging related files
 ```
 
-`x.x.x` is a kernel version. It can be your current kernel version or latest version your system has. Type  `uname -r` to see your current kernel version.  
+`x.x.x` is a kernel version. It can be your current kernel version or latest version your system has. Type  `uname -r` to see your current kernel version.
 
 5. Compile and install. The `LOCALVERSION=-profiling` option can be replaced by any custom marker. Remember to replace `profiling` with your own definition in the rest of the instructions.
 
@@ -155,7 +155,7 @@ Here, `<iface>` is the network interface on which the experiments are to be run.
 
 **NOTE** You only need to follow these instructions if your CPU or NIC configuration is different from ours.
 
-The default RSS or RPS will forward packets to a receive queue of NIC or CPU based on the hash value of the five tuple, leading performance fluctuation for different runs. Hence, in order to make the performance reproducible, we use flow steering to steer packets to a specific queue/CPU. The setup is done by `network_setup.py`. The only thing you need to do is to get the mapping between CPUs and receive queues. 
+The default RSS or RPS will forward packets to a receive queue of NIC or CPU based on the hash value of the five tuple, leading performance fluctuation for different runs. Hence, in order to make the performance reproducible, we use flow steering to steer packets to a specific queue/CPU. The setup is done by `network_setup.py`. The only thing you need to do is to get the mapping between CPUs and receive queues.
 
 The following instructions are for Mellanox NIC, which may or may not apply to other NICs as well. We will use IRQ affinity table to infer the mapping between the receive queues and the CPU cores. The assumption here is there is a one-to-one mapping between receive queue and IRQ as well.
 
@@ -171,9 +171,9 @@ sudo service irqbalance stop
 ```
 sudo show_irq_affinity.sh <iface>
 ```
- 
+
 For example:
- 
+
 ```
 152: 000001
 153: 000001
@@ -215,7 +215,7 @@ ___x__ <- NUMA ID
 6    1
 ```
 
-The index in the bitmap denotes the core ID. The number `x` denotes the NUMA node of the core when interpreted as a bitmap. So the bitmap `004000` will be interpreted as 3rd NUMA (i.e NUMA 2 as `4 = 0100`) and since it's at index 4 from the left, it's the 4th core. So this is the 4th core of the 3rd NUMA node which is core 14. 
+The index in the bitmap denotes the core ID. The number `x` denotes the NUMA node of the core when interpreted as a bitmap. So the bitmap `004000` will be interpreted as 3rd NUMA (i.e NUMA 2 as `4 = 0100`) and since it's at index 4 from the left, it's the 4th core. So this is the 4th core of the 3rd NUMA node which is core 14.
 
 3. Change `CPU_TO_RX_QUEUE_MAP` in the `constants.py`. This is the mapping from CPUs to their corresponding receive queues. For the example stated above, the mapping is
 
@@ -229,7 +229,7 @@ Core 0 maps to queue 0 (IRQ 153), core 1 maps to queue 6 (IRQ 159).
 
 To run any experiment (eg. Single Flow), configure two servers as the sender and the receiver, and install the requisite kernel and tools on both of them. Then
 
-1. At the receiver, 
+1. At the receiver,
 
 ```
 sudo -s
@@ -289,7 +289,7 @@ sudo -s
 cd ~/terabit-network-stack-profiling/scripts
 ```
 
-- Figure 3(a)-3(d) (Single Flow) (~7 minutes)
+- Figure 3(a)-3(d) (Single Flow) (~6 minutes)
    - Sender: `bash sender/single-flow.sh`
    - Receiver: `bash receiver/single-flow.sh`
 
@@ -354,5 +354,5 @@ In case of errors, like freezes, crashes, or unexpected error messages, please r
 
 ## Authors
 
-* Shubham Chaudhary 
+* Shubham Chaudhary
 * Qizhe Cai

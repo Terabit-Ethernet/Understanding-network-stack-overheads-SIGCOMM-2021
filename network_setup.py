@@ -159,7 +159,7 @@ def setup_irq_mode_no_arfs_sender(iface, flow_type, config):
         ntuple_send_all_traffic_to_queue(iface, CPU_TO_RX_QUEUE_MAP[1], 0)
     elif config in ["incast", "one-to-one"]:
         manage_ntuple(iface, True)
-        for n, cpu in zip(range(MAX_CONNECTIONS), CPUS):       
+        for n, cpu in zip(range(MAX_CONNECTIONS), CPUS):
             q = CPU_TO_RX_QUEUE_MAP[(cpu + 1) % MAX_CPUS]
             ntuple_send_port_to_queue(iface, BASE_PORT + n, q, n)
     else:
@@ -170,7 +170,7 @@ def setup_irq_mode_no_arfs_receiver(iface, flow_type, config):
     stop_irq_balance()
     manage_rps(iface, False)
     ntuple_clear_rules(iface)
-    set_irq_affinity(iface) 
+    set_irq_affinity(iface)
 
     # For single flow or incast, we have to send all traffic to core 1;
     # for one-to-one and outcast, we use flow steering to next core;
@@ -180,7 +180,7 @@ def setup_irq_mode_no_arfs_receiver(iface, flow_type, config):
         ntuple_send_all_traffic_to_queue(iface, CPU_TO_RX_QUEUE_MAP[1], 0)
     elif config in ["outcast", "one-to-one"]:
         manage_ntuple(iface, True)
-        for n, cpu in zip(range(MAX_CONNECTIONS), CPUS):       
+        for n, cpu in zip(range(MAX_CONNECTIONS), CPUS):
             q = CPU_TO_RX_QUEUE_MAP[(cpu + 1) % MAX_CPUS]
             ntuple_send_port_to_queue(iface, BASE_PORT + n, q, n)
     else:

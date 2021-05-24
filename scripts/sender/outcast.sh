@@ -2,7 +2,7 @@
 # Get the dir of this project
 DIR=$(realpath $(dirname $(readlink -f $0))/../..)
 
-# Parse arguments 
+# Parse arguments
 # Example: ./outcast.sh 128.84.155.115 192.168.10.115 enp37s0f1
 public_dst_ip=${1:-128.84.155.115}
 device_dst_ip=${2:-192.168.10.115}
@@ -35,3 +35,6 @@ $DIR/network_setup.py $iface --arfs
 for i in 2 4 8; do
         $DIR/run_experiment_sender.py --addr $device_dst_ip --receiver $public_dst_ip --config outcast --num-connections $i --throughput --utilisation --util-breakdown --arfs --output $results_dir/outcast_${i}_all-opts | tee $results_dir/outcast_${i}_all-opts.log
 done
+
+# Print results
+$DIR/scripts/parse/outcast.sh $results_dir
