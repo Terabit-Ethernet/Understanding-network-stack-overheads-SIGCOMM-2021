@@ -38,7 +38,7 @@ The given kernel patch includes the following features.
 
 * By default, the kernel forcibly enables GSO (Generic Segmentation Offload) even when explicity disabled. This would not let us compare the performance of TSO to the baseline, so we patch the kernel to allow us to truly disable GSO.
 * Since we want to test the performace of the TCP stack in presence of packet loss, we introduce a `sysctl` parameter `net.core.packet_loss_gen` which, when enabled, drops packets in the lower layers of packet processing.
-* We introduce a patch to measure scheduling/data copy latency, by timestamping of each `skb` shortly after it's created and logging the delta between it and right before data copy is performed.
+* We introduce a patch to measure scheduling/data copy latency, by timestamping each `skb` shortly after it's created and logging the delta between then and right before data copy is performed.
 * We also patch the kernel to capture a histogram of `skb` sizes after GRO (Generic Segmentation Offload) and log them.
 
 Our patch is based on Linux 5.4.43. On Ubuntu 16.04, you can use the following instructions to build and install the kernel.
@@ -155,9 +155,9 @@ Here, `<iface>` is the network interface on which the experiments are to be run.
 
 **NOTE** You only need to follow these instructions if your CPU or NIC configuration is different from ours.
 
-The default RSS or RPS will forward packets to a receive queue of NIC or CPU based on the hash value of five tuples, leading performance fluctuation for different runs. Hence, in order to make the performance reproducible, we use flow steering to steer packets to a specific queue/CPU. The setup is done by `network_setup.py`. The only thing you need to do is to get the mapping between CPUs and receive queues. 
+The default RSS or RPS will forward packets to a receive queue of NIC or CPU based on the hash value of the five tuple, leading performance fluctuation for different runs. Hence, in order to make the performance reproducible, we use flow steering to steer packets to a specific queue/CPU. The setup is done by `network_setup.py`. The only thing you need to do is to get the mapping between CPUs and receive queues. 
 
-The following instructions are for Mellanox NIC, which may be okay to extend to other NICs as well. We will use IRQ affinity table to infer the mapping between the receive queues and the CPU cores. The assumption here is there is a one-to-one mapping between receive queue and IRQ as well.
+The following instructions are for Mellanox NIC, which may or may not apply to other NICs as well. We will use IRQ affinity table to infer the mapping between the receive queues and the CPU cores. The assumption here is there is a one-to-one mapping between receive queue and IRQ as well.
 
 1. Reset IRQ mapping between CPU and IRQ to default and disable `irqbalance` as it dynamically changes the IRQ affinity causing unexpected performance deviations.
 
@@ -166,7 +166,7 @@ sudo set_irq_affinity.sh <iface>
 sudo service irqbalance stop
 ```
 
-2. Show the IRQ affinit table.
+2. Show the IRQ affinity table.
 
 ```
 sudo show_irq_affinity.sh <iface>
@@ -202,7 +202,7 @@ For example:
 176: 800000
 ```
 
-IRQ 152 can be ignored. The IRQs 153-176 map to receive queues 0-23 respectively (our system has 24 cores). To interpret the line `N: xxxxxx`, N is the IRQ number, while `xxxxxx` is a bitmap for the cores the IRQ will be sent to. The number `xxxxxx` can be interpreted as follows.
+IRQ 152 can be ignored. The IRQs 153-176 map to receive queues 0-23 respectively (this server has 24 cores). To interpret the line `N: xxxxxx`, N is the IRQ number, while `xxxxxx` is a bitmap for the cores the IRQ will be sent to. The number `xxxxxx` can be interpreted as follows.
 
 ```
 Index starting
@@ -215,7 +215,7 @@ ___x__ <- NUMA ID
 6    1
 ```
 
-The index in the bitmap denotes the core ID. The number `x` denotes the NUMA node of the core when interpreted as a bitmap. So the bitmap `004000` will be interpreted as 3nd NUMA (i.e NUMA 2 as `4 = 0100`) and since it's at index 4 from the left, it's the 4th core. So this is the 4th core in 3nd NUMA node which is core 14. 
+The index in the bitmap denotes the core ID. The number `x` denotes the NUMA node of the core when interpreted as a bitmap. So the bitmap `004000` will be interpreted as 3rd NUMA (i.e NUMA 2 as `4 = 0100`) and since it's at index 4 from the left, it's the 4th core. So this is the 4th core of the 3rd NUMA node which is core 14. 
 
 3. Change `CPU_TO_RX_QUEUE_MAP` in the `constants.py`. This is the mapping from CPUs to their corresponding receive queues. For the example stated above, the mapping is
 
@@ -227,7 +227,7 @@ Core 0 maps to queue 0 (IRQ 153), core 1 maps to queue 6 (IRQ 159).
 
 ## Running an Experiment
 
-To run any experiment (eg. Single Flow case), configure two servers as the sender and the receiver, and install the requisite kernel and tools on both of them. Then
+To run any experiment (eg. Single Flow), configure two servers as the sender and the receiver, and install the requisite kernel and tools on both of them. Then
 
 1. At the receiver, 
 
@@ -247,11 +247,11 @@ cd ~/terabit-network-stack-profiling/scripts
 bash sender/single-flow.sh <public_ip> <ip_iface> <iface> <results_dir>
 ```
 
-`<public_ip>` is an IP address for synchronization between sender and receiver for running the experiments; it's recommended that you use another (secondary) NIC for this purpose. Currently, we are using `SimpleXMLRPCServer` to control the synchronization. `<ip_iface>` is the IP of the receiver's NIC whose performance you'd like to evaluate. Both IP addresses (`<public_ip>` and `<ip_iface>`) are **receiver** addresses. `<iface>` is the NIC interface name on the sender side.
+`<public_ip>` is an IP address for synchronization between sender and receiver for running the experiments; it's recommended that you use another (secondary) NIC for this purpose. Currently, we are using `SimpleXMLRPCServer` for synchronization. `<ip_iface>` is the IP of the receiver's NIC whose performance you'd like to evaluate. Both IP addresses (`<public_ip>` and `<ip_iface>`) are **receiver** addresses. `<iface>` is the NIC interface name on the sender side.
 
 **NOTE** `<ip_iface>` must be `192.168.10.115`. See [Section 2.5](#install-ofed-driver-mellanox-nic-and-configure-nics).
 
-3. The results can be found in `<results_dir>/`; if you would like to get CPU profiling results organized by categories, you can look at `stdout` and log files. For example, in no optimization single flow case, `<results_dir>/single-flow_no-opts.log` contains this info
+3. The results can be found in `<results_dir>`; if you would like to get CPU profiling results organized by categories, you can look at `stdout` and log files. For example, in the no optimization single flow case, `<results_dir>/single-flow_no-opts.log` contains this info
 
 ```
 data_copy etc   lock  mm    netdev sched skb   tcp/ip
@@ -271,7 +271,7 @@ We have used the follwing hardware and software configurations for running the e
 
 #### Caveats of Our Work
 
-Our work has been evaluated with two servers with 4-socket multi-core CPUs and 100 Gbps NICs directly connected with a DAC cable. While we generally focus on trends rather than individual data points, other combinations of end-host network stacks and hardware may exhibit different performance characteristics. All our scripts use `network_setup.sh` to configure the NIC to allow a specific benchmark to be performed. Some of these configurations may be specific to Mellanox NICs (e.g., enabling aRFS).
+Our work has been evaluated with two servers with 4-socket multi-core CPUs and 100 Gbps NICs directly connected with a DAC cable. While we generally focus on trends rather than individual data points, other combinations of end-host network stacks and hardware may exhibit different performance characteristics. All our scripts use `network_setup.sh` to configure the NIC to allow a specific benchmark to be performed. Some of these configurations may be specific to Mellanox NICs (e.g. enabling aRFS).
 
 ### Running Experiments
 
@@ -282,7 +282,7 @@ This section assumes that
 * the IP address of the NIC to be profiled is set to be `192.168.10.114` for the sender, and `192.168.10.115` for the receiver, in accordance with [Section 2.5](#install-ofed-driver-mellanox-nic-and-configure-nics);
 * and that the name of the interface of the NIC to be profiled is `enp37s0f1`.
 
-Please make sure you change the command-lines below to reflect any differences between your setup and the assumptions, refer to [Section 3](#running-an-experiment) on how to do that. All experiments must be run as `sudo`.
+The scripts given below have hardcoded default arguments in accordance with the above assumptions, so that they can be run as is. Please make sure you change the command-lines below to reflect any differences between your setup and the assumptions, refer to [Section 3](#running-an-experiment) on how to do that. All experiments must be run as `sudo`.
 
 ```
 sudo -s
@@ -337,7 +337,7 @@ The results of each experiment will be logged to `stdout` as well as to the dire
 
 We report some or all of the following metrics in our experiments. Each invocation of the `run_experiment_*.py` will log a summary of the results on the sender-side.
 
-* **Throughput**: Unidirectional aggregate throughput (in Gbps).
+* **Throughput**: Unidirectional (sender to receiver) aggregate throughput (in Gbps).
 * **Utilisation**: CPU utilisation (in percent (%)) on the sender-side and the receiver-side.
 * **Cache Miss:** Cache-miss rate (in percent (%)) on the sender-side and receiver-side.
 * **CPU Utilisation Breakdown**: Fraction of CPU cycles taken by various layers of the kernel TCP stack.
