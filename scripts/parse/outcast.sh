@@ -10,9 +10,9 @@ results_dir=${1:-$DIR/results}
 tmp=`mktemp`
 echo -e "*** outcast summary ***"
 echo -e "****** throughput per core with varying number of flows and different optimisations ******"
-echo -e "config\tn\t$(awk -F'\t' '/summary/{getline; print $4}' $results_dir/outcast_8_no-opts.log)" > $tmp
+echo -e "config\tn\t$(awk -F'\t' '/summary/{getline; print $4}' $results_dir/outcast_2_no-opts.log)" > $tmp
 for config in no-opts tsogro tsogro+jumbo all-opts; do
-    for n in 8 16 24; do
+    for n in 2 4 8; do
         echo -e "${config}\t${n}\t$(awk -F'\t' '/summary/{getline; getline; print $4}' $results_dir/outcast_${n}_${config}.log)" >> $tmp
     done
 done
@@ -20,8 +20,8 @@ column -t -s $'\t' $tmp
 echo
 
 echo -e "****** receiver CPU utilisation breakdown with varying number of flows and all optimisations enabled ******"
-echo -e "n\t$(awk '/receiver utilisation breakdown/{getline; print}' $results_dir/outcast_8_all-opts.log)" > $tmp
-for n in 8 16 24; do
+echo -e "n\t$(awk '/receiver utilisation breakdown/{getline; print}' $results_dir/outcast_2_all-opts.log)" > $tmp
+for n in 2 4 8; do
     echo -e "${n}\t$(awk '/receiver utilisation breakdown/{getline; getline; print}' $results_dir/outcast_${n}_all-opts.log)" >> $tmp
 done
 column -t -s $'\t' $tmp
