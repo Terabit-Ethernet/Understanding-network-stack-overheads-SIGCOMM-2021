@@ -371,7 +371,7 @@ The results of the experiment can be pretty printed again by running the command
 
 #### A Note on the Evaluation Metrics
 
-We report some or all of the following metrics in our experiments. Each invocation of the `run_experiment_*.py` will log a summary of the results on the sender-side.
+We report some or all of the following metrics in our experiments. Each invocation of the `<experiment_name>.sh` will log a summary of the results on the sender-side.
 
 * **Throughput**: Unidirectional (sender to receiver) aggregate throughput (in Gbps).
 * **Utilisation**: CPU utilisation (in percent (%)) on the sender-side and the receiver-side.
