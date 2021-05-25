@@ -151,7 +151,7 @@ def clear_processes():
     os.system("pkill sar")
 
 
-def run_iperf(cpu, addr, port, duration, window, _):
+def run_iperf(cpu, addr, port, duration, window):
     if window is None:
         args = ["taskset", "-c", str(cpu), "iperf", "-i", "1", "-c", addr, "-t", str(duration), "-p", str(port)]
     else:
@@ -160,37 +160,43 @@ def run_iperf(cpu, addr, port, duration, window, _):
     return subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True)
 
 
-def run_netperf(cpu, addr, port, duration, _, rpc_size):
+def run_netperf(cpu, addr, port, duration, rpc_size):
     args = ["taskset", "-c", str(cpu), "netperf", "-H", addr, "-t", "TCP_RR", "-l", str(duration), "-p", str(port), "-f", "g", "--", "-r", "{0},{0}".format(rpc_size), "-o", "throughput"]
 
     return subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True)
 
 
+# We run one iperf client process per flow, and one netperf process per flow
 def run_flows(flow_type, config, addr, num_connections, num_rpcs, cpus, duration, window, rpc_size):
-    if flow_type in ["long", "mixed"]:
-        flow_func = run_iperf
-    elif flow_type == "short":
-        flow_func = run_netperf
-
     procs = []
-    if config == "single":
-        procs.append(flow_func(cpus[0], addr, BASE_PORT, duration, window, rpc_size))
-    elif config == "incast":
-        procs += [flow_func(cpu, addr, BASE_PORT, duration, window, rpc_size) for cpu in cpus]
-    elif config == "outcast":
-        procs += [flow_func(cpus[0], addr, BASE_PORT + n, duration, window, rpc_size) for n in range(num_connections)]
-    elif config == "one-to-one":
-        procs += [flow_func(cpu, addr, BASE_PORT + n, duration, window, rpc_size) for n, cpu in enumerate(cpus)]
-    elif config == "all-to-all":
-        for i, sender_cpu in enumerate(cpus):
-            for j, receiver_cpu in enumerate(cpus):
-                procs.append(flow_func(sender_cpu, addr, BASE_PORT + j, duration, window, rpc_size))
-
-    # If we're running mixed flow experiments run some additional
-    # short flows
     if flow_type == "mixed":
-        for i in range(num_rpcs):
-            procs.append(run_netperf(cpus[0], addr, ADDITIONAL_BASE_PORT, duration, window, rpc_size))
+        procs.append(run_iperf(cpus[0], addr, BASE_PORT, duration, window))
+        for _ in range(num_rpcs):
+            procs.append(run_netperf(cpus[0], addr, ADDITIONAL_BASE_PORT, duration, rpc_size))
+    elif flow_type == "long":
+        if config == "single":
+            procs.append(run_iperf(cpus[0], addr, BASE_PORT, duration, window))
+        elif config == "outcast":
+            procs += [run_iperf(cpus[0], addr, BASE_PORT + n, duration, window) for n in range(num_connections)]
+        elif config in ["incast", "one-to-one"]:
+            procs += [run_iperf(cpu, addr, BASE_PORT + n, duration, window) for n, cpu in enumerate(cpus)]
+        else:
+            for i, sender_cpu in enumerate(cpus):
+                for j, receiver_cpu in enumerate(cpus):
+                    procs.append(run_iperf(sender_cpu, addr, BASE_PORT + i * MAX_CONNECTIONS + j, duration, window))
+    else:
+        if config == "single":
+            procs.append(run_netperf(cpus[0], addr, BASE_PORT, duration, rpc_size))
+        elif config == "incast":
+            procs += [run_netperf(cpu, addr, BASE_PORT, duration, rpc_size) for cpu in cpus]
+        elif config == "outcast":
+            procs += [run_netperf(cpus[0], addr, BASE_PORT + n, duration, rpc_size) for n in range(num_connections)]
+        elif config == "one-to-one":
+            procs += [run_netperf(cpu, addr, BASE_PORT + n, duration, rpc_size) for n, cpu in enumerate(cpus)]
+        else:
+            for i, sender_cpu in enumerate(cpus):
+                for j, receiver_cpu in enumerate(cpus):
+                    procs.append(run_netperf(sender_cpu, addr, BASE_PORT + j, duration, rpc_size))
 
     return procs
 
