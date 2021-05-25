@@ -35,6 +35,7 @@ def parse_args():
     parser.add_argument('--sock-size', action='store_true', default=None, help='Increase socket read/write memory limits.')
     parser.add_argument('--dca', type=int, default=None, help='Set the number of cache ways DCA/DDIO can use.')
     parser.add_argument('--ring-buffer', type=int, default=None, help='Set the size of the RX/TX ring buffer.')
+    parser.add_argument("--packet-drop", type=int, default=None, help="Inverse packet drop rate.")
 
     # Parse offload parameters
     parser.add_argument('--gro', action='store_true', default=None, help='Enables GRO.')

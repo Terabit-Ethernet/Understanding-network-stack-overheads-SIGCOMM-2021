@@ -19,7 +19,7 @@ done
 column -t -s $'\t' $tmp
 echo
 
-echo -e "****** Receiver CPU utilisation breakdown with varying number of flows and all optimisations enabled ******"
+echo -e "****** receiver CPU utilisation breakdown with varying number of flows and all optimisations enabled ******"
 echo -e "n\t$(awk '/receiver utilisation breakdown/{getline; print}' $results_dir/all-to-all_8_all-opts.log)" > $tmp
 for n in 8 16 24; do
     echo -e "${n}\t$(awk '/receiver utilisation breakdown/{getline; getline; print}' $results_dir/all-to-all_${n}_all-opts.log)" >> $tmp

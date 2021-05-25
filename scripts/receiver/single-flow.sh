@@ -20,7 +20,7 @@ $DIR/run_experiment_receiver.py --throughput --utilisation --util-breakdown --ou
 
 # Jumbo
 $DIR/network_setup.py $iface --no-gro --no-tso --mtu 9000
-$DIR/run_experiment_receiver.py --throughput --utilisation --util-breakdown --output $results_dir/single-flow_jumbo | tee $results_dir/single-flow_jumbo.log
+$DIR/run_experiment_receiver.py --throughput --utilisation --output $results_dir/single-flow_jumbo | tee $results_dir/single-flow_jumbo.log
 
 # TSO/GRO+Jumbo Frame
 $DIR/network_setup.py $iface --gro --tso
@@ -28,11 +28,11 @@ $DIR/run_experiment_receiver.py --throughput --utilisation --util-breakdown --ou
 
 # TSO/GRO+aRFS
 $DIR/network_setup.py $iface --arfs --mtu 1500
-$DIR/run_experiment_receiver.py --throughput --utilisation --util-breakdown --arfs --output $results_dir/single-flow_tsogro+arfs | tee $results_dir/single-flow_tsogro+arfs.log
+$DIR/run_experiment_receiver.py --throughput --utilisation --arfs --output $results_dir/single-flow_tsogro+arfs | tee $results_dir/single-flow_tsogro+arfs.log
 
 # Jumbo+aRFS
 $DIR/network_setup.py $iface --no-gro --no-tso --mtu 9000
-$DIR/run_experiment_receiver.py --throughput --utilisation --util-breakdown --arfs --output $results_dir/single-flow_jumbo+arfs | tee $results_dir/single-flow_jumbo+arfs.log
+$DIR/run_experiment_receiver.py --throughput --utilisation --arfs --output $results_dir/single-flow_jumbo+arfs | tee $results_dir/single-flow_jumbo+arfs.log
 
 # TSO/GRO+Jumbo Frame+aRFS
 $DIR/network_setup.py $iface --gro --tso
