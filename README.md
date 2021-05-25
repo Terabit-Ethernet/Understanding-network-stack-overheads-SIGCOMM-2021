@@ -252,7 +252,7 @@ bash sender/single-flow.sh <public_ip> <ip_iface> <iface> <results_dir>
 
 **NOTE** `<ip_iface>` must be `192.168.10.115`. See [Section 2.5](#install-ofed-driver-mellanox-nic-and-configure-nics).
 
-3. A summary of the results of the experiment are printed on the sender-side after it's finished. The relevant logs can be found in `<results_dir>`. It is also possible to pretty print the results of an experiment after it's finished. Simply point the relevant script in `~/terabit-network-stack-profiling/scripts/parse` to the `<results_dir>` on the sender-side. For instance, after running the `scripts/sender/single-flow.sh ... <results_dir>` script, running `scripts/parse/single-flow.sh <results_dir>` produces the following output.
+3. A summary of the results of the experiment is printed on the sender-side. The relevant logs can be found in `<results_dir>`. It is also possible to pretty print the results of an experiment later. Simply point the relevant script in `~/terabit-network-stack-profiling/scripts/parse` to the `<results_dir>` on the sender-side. For instance, after running the `scripts/sender/single-flow.sh ... <results_dir>` script, running `scripts/parse/single-flow.sh <results_dir>` produces the following output.
 
 ```
 *** single-flow summary ***
