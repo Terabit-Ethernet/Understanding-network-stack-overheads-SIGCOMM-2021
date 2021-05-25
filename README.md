@@ -12,6 +12,7 @@ The repository is organised as follows.
 * `scripts` contains scripts used to run experiments for our SIGCOMM 2021 paper.
     * `scripts/sender` are the scripts that must be run on the sender-side.
     * `scripts/receiver` are the respective receiver-side scripts.
+    * `scripts/parse` are the scripts that can be used to parse and pretty print the results of an experiment after it's finished.
 * `run_experiment_sender.py`, `run_experiment_receiver.py` are the scripts that actually run the experiment.
     * `network_setup.py` allows us to configure the NIC to enable/disable various offloads, set parameters and so on.
     * `constants.py` contains the constants used by our scripts.
@@ -251,11 +252,40 @@ bash sender/single-flow.sh <public_ip> <ip_iface> <iface> <results_dir>
 
 **NOTE** `<ip_iface>` must be `192.168.10.115`. See [Section 2.5](#install-ofed-driver-mellanox-nic-and-configure-nics).
 
-3. The results can be found in `<results_dir>`; if you would like to get CPU profiling results organized by categories, you can look at `stdout` and log files. For example, in the no optimization single flow case, `<results_dir>/single-flow_no-opts.log` contains this info
+3. A summary of the results of the experiment are printed on the sender-side after it's finished. The relevant logs can be found in `<results_dir>`. It is also possible to pretty print the results of an experiment after it's finished. Simply point the relevant script in `~/terabit-network-stack-profiling/scripts/parse` to the `<results_dir>` on the sender-side. For instance, after running the `scripts/sender/single-flow.sh ... <results_dir>` script, running `scripts/parse/single-flow.sh <results_dir>` produces the following output.
 
 ```
-data_copy etc   lock  mm    netdev sched skb   tcp/ip
-4.590     9.650 4.980 7.030 16.090 4.880 7.060 37.210
+*** single-flow summary ***
+****** throughput per core with different optimisations ******
+config        throughput per core (Gbps)
+no-opts       4.783
+tsogro        14.976
+jumbo         25.876
+tsogro+jumbo  27.642
+tsogro+arfs   28.254
+jumbo+arfs    40.801
+all-opts      41.210
+
+****** throughput and CPU utilisation with different optimisations ******
+config        throughput (Gbps)  sender utilisation (%)  receiver utilisation (%)
+no-opts       9.009              101.523                 185.764
+tsogro        26.590             80.036                  175.146
+tsogro+jumbo  32.540             67.420                  114.462
+all-opts      42.200             59.813                  100.000
+
+****** sender CPU utilisation breakdown with different optimisations ******
+config        data_copy  etc    lock   mm     netdev  sched  skb    tcp/ip
+no-opts       5.900      4.940  4.520  8.230  17.500  2.160  9.450  41.460
+tsogro        28.630     7.260  6.100  8.070  10.160  9.040  7.650  15.760
+tsogro+jumbo  36.760     4.290  6.860  9.290  7.900   7.100  7.720  13.370
+all-opts      47.950     4.750  1.810  6.790  8.480   6.980  3.390  12.730
+
+****** receiver CPU utilisation breakdown with different optimisations ******
+config        data_copy  etc    lock   mm      netdev  sched  skb     tcp/ip
+no-opts       7.390      0.540  8.900  4.430   9.270   2.400  7.260   54.820
+tsogro        29.810     1.430  1.080  5.680   33.840  5.170  13.310  4.700
+tsogro+jumbo  44.510     0.560  1.550  15.930  15.060  1.980  11.400  4.030
+all-opts      54.330     1.770  0.610  10.990  18.250  2.960  3.670   2.220
 ```
 
 ## SIGCOMM 2021 Artifact Evaluation
@@ -336,6 +366,8 @@ cd ~/terabit-network-stack-profiling/scripts
 ### Interpreting the Results
 
 The results of each experiment will be logged to `stdout` as well as to the directory `~/terabit-network-stack-profiling/results`. This directory will contain files which are named with the format `<experiment_name>_<parameter>_<optimisations>`, where `<experiment_name>` is the name of the experiment (`all-to-all`), `<parameter>` is the value of the parameter that was changed in the experiment (`4` flows, `6400` bytes RPC size), and `<optimisations>` is the set of optimisations enabled for the experiment (`tsogro`, `tsogro+jumbo`, `all-opts`).
+
+The results of the experiment can be pretty printed again by running the command `~/terabit-network-stack-profiling/scripts/parse/<experiment_name>.sh`, where `<experiment_name>` is the file name (without extension) of the script used to run the experiment.
 
 #### A Note on the Evaluation Metrics
 
