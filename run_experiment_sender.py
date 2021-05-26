@@ -600,9 +600,9 @@ if __name__ == "__main__":
     if args.throughput and args.utilisation:
         header.append("throughput per core (Gbps)")
         if args.config == "outcast":
-            output.append("{:.3f}".format(throughput * 100 / cpu_util))
+            output.append("{:.3f}".format(total_throughput * 100 / cpu_util))
         else:
-            output.append("{:.3f}".format(throughput * 100 / receiver_results["cpu_util"]))
+            output.append("{:.3f}".format(total_throughput * 100 / receiver_results["cpu_util"]))
 
     # Mark sender as done
     receiver.mark_sender_ready()
