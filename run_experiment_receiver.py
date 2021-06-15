@@ -101,9 +101,10 @@ def parse_args():
         exit(0)
 
     # Set IRQ processing CPUs
-    if args.affinity is not None and not all(map(lambda c: 0 <= c < MAX_CPUS, args.affinity)):
-        print("Can't set --cpus outside of [0, {}].".format(MAX_CPUS))
-        exit(1)
+    if args.affinity is not None:
+        if not all(map(lambda c: 0 <= c < MAX_CPUS, args.affinity)):
+            print("Can't set --affinity outside of [0, {}].".format(MAX_CPUS))
+            exit(1)
     elif not args.arfs:
         if args.config in ["incast", "single"]:
             args.affinity = [1]
