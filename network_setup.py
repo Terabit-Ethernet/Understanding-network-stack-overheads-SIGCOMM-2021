@@ -211,7 +211,7 @@ def setup_irq_mode_no_arfs_receiver(affinity, iface, flow_type, config):
         ntuple_send_all_traffic_to_queue(iface, CPU_TO_RX_QUEUE_MAP[affinity[0]], 0)
     elif config in ["outcast", "one-to-one"]:
         manage_ntuple(iface, True)
-        for n, cpu in enumarate(affinity):
+        for n, cpu in enumerate(affinity):
             q = CPU_TO_RX_QUEUE_MAP[cpu]
             ntuple_send_port_to_queue(iface, BASE_PORT + n, q, n)
     else:
