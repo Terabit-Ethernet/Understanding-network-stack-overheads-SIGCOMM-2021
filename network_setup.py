@@ -64,6 +64,10 @@ def parse_args():
         print("Can't set --dca values outside of [1, 11].")
         exit(1)
 
+    if args.arfs is not None and args.arfs and args.affinity is not None:
+       print("Can't set --affinity with --arfs.")
+       exit(0)
+
     if args.arfs is not None and not args.arfs:
         if args.sender is not None and args.receiver is not None:
             print("Can't set both --sender and --receiver.")
@@ -79,10 +83,6 @@ def parse_args():
 
         single_cpu_configs = ["single", "incast" if args.receiver else "outcast"]
         multiple_cpu_configs = ["one-to-one", "outcast" if args.receiver else "incast"]
-
-        if args.arfs and args.affinity is not None:
-            print("Can't set --affinity with --arfs.")
-            exit(0)
 
         if args.config == "all-to-all" and args.affinity is not None:
             print("Can't set --affinity with --config all-to-all, uses RSS.")
@@ -101,10 +101,10 @@ def parse_args():
             if not all(map(lambda c: 0 <= c < MAX_CPUS, args.affinity)):
                 print("Can't set --affinity outside of [0, {}].".format(MAX_CPUS))
                 exit(1)
-        elif not args.arfs:
+        else:
             if args.config in single_cpu_configs:
                 args.affinity = [1]
-            elif args.affinity in multiple_cpu_configs:
+            elif args.config in multiple_cpu_configs:
                 args.affinity = [(cpu + 1) % MAX_CPUS for cpu in CPUS]
 
     if args.mtu is not None and not (0 < args.mtu <= 9000):
