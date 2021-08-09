@@ -392,3 +392,26 @@ In case of errors, like freezes, crashes, or unexpected error messages, please r
 
 * Shubham Chaudhary
 * Qizhe Cai
+
+## Citing
+
+Please cite our paper if you're using any part of this code for your project.
+
+```
+@inproceedings{10.1145/3452296.3472888,
+  author = {Cai, Qizhe and Chaudhary, Shubham and Vuppalapati, Midhul and Hwang, Jaehyun and Agarwal, Rachit},
+  title = {Understanding Host Network Stack Overheads},
+  year = {2021},
+  isbn = {9781450383837},
+  publisher = {Association for Computing Machinery},
+  address = {New York, NY, USA},
+  url = {https://doi.org/10.1145/3452296.3472888},
+  doi = {10.1145/3452296.3472888},
+  booktitle = {Proceedings of the 2021 ACM SIGCOMM 2021 Conference},
+  pages = {65–77},
+  numpages = {13},
+  keywords = {network hardware, datacenter networks, host network stacks},
+  location = {Virtual Event, USA},
+  series = {SIGCOMM '21}
+}
+```
