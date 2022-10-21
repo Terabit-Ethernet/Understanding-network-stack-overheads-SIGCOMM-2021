@@ -4,6 +4,7 @@
 
 We provide here the scripts that can be used to profile the Linux kernel TCP stack running over terabit ethernet networks. [Section 1](#organisation) describes the organisation of the repository. [Section 2](#setup-servers) contains the steps required to setup the servers to perform profiling. This involves patching and installing an appproriate kernel, installing additional tools like `perf`, and configuring the NIC which one would like to use for the profiling. [Section 3](#running-an-experiment) gives a general overview of how to use our evaluation scripts. And finally, in [Section 4](#sigcomm-2021-artifact-evaluation) you will find the necessary instructions to reproduce the results from our SIGCOMM 2021 paper.
 
+Note: our results are on Intel processors, and numbers can be different on AMD servers (no DDIO, CPU heterogeneity within NUMA node due to CCX etc).
 ## Organisation
 
 The repository is organised as follows.
